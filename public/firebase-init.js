@@ -5,7 +5,7 @@
 
 const firebaseConfig = {
   apiKey:            "AIzaSyD2Cs6-UrVnMX3OhL5x6qb9zkcG5rD63B8",
-  authDomain:        "my-scheduleflow-dev.firebaseapp.com",
+  authDomain:        "my-scheduleflow-dev.web.app",
   projectId:         "my-scheduleflow-dev",
   storageBucket:     "my-scheduleflow-dev.firebasestorage.app",
   messagingSenderId: "49679554908",
