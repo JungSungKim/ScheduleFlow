@@ -274,8 +274,9 @@ function renderDashCalendar() {
   };
   const todayBtn = document.getElementById('dash-cal-today-btn');
   if (todayBtn) todayBtn.onclick = () => {
-    dashCalYear  = now.getFullYear();
-    dashCalMonth = now.getMonth();
+    const n = new Date();
+    dashCalYear  = n.getFullYear();
+    dashCalMonth = n.getMonth();
     renderDashCalendar();
   };
 }

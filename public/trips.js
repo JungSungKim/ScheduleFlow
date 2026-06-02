@@ -82,6 +82,7 @@ function deleteTrip(id) {
   Store.saveTrips(Store.getTrips().filter(t => t.id !== id));
   closeModal();
   renderTrips();
+  if (typeof renderTodos    === 'function') renderTodos();
   if (typeof renderDashboard === 'function') renderDashboard();
 }
 

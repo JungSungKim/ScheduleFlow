@@ -22,9 +22,17 @@ function initCalDate() {
   calMonth = now.getMonth();
 }
 
+// ── Day-panel date match helper ──
+function todoAppearsOn(t, dateStr) {
+  const start = t.startDate || t.dueDate;
+  const end   = t.dueDate   || t.startDate;
+  if (!start && !end) return false;
+  return dateStr >= (start || end) && dateStr <= (end || start);
+}
+
 // ── Recurrence & Date Match Helper ──
 function getEventStartEnd(t) {
-  const isTrip = t.destination !== undefined; // Trip has destination
+  const isTrip = 'preReport' in t; // trips always carry preReport/postReport fields
   let start = isTrip ? t.startDate : (t.startDate || t.dueDate || today());
   let end   = isTrip ? t.endDate   : (t.dueDate || t.startDate || today());
   if (start > end) { const tmp=start; start=end; end=tmp; }
@@ -84,8 +92,8 @@ function renderCalendar() {
     let found = false;
     while (!found) {
       found = true;
-      let d = new Date(evt._start);
-      const limit = new Date(evt._end);
+      let d = new Date(evt._start + 'T00:00:00');
+      const limit = new Date(evt._end + 'T00:00:00');
       while (d <= limit) {
         const dStr = isoDate(d);
         if (dayTracks[dStr] && dayTracks[dStr][track]) { found = false; break; }
@@ -93,8 +101,8 @@ function renderCalendar() {
       }
       if (!found) track++;
     }
-    let d = new Date(evt._start);
-    const limit = new Date(evt._end);
+    let d = new Date(evt._start + 'T00:00:00');
+    const limit = new Date(evt._end + 'T00:00:00');
     while (d <= limit) {
       const dStr = isoDate(d);
       if (dayTracks[dStr]) dayTracks[dStr][track] = evt;

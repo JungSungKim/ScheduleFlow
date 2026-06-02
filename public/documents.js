@@ -115,6 +115,7 @@ function printPreReport(tripId) {
   if (!trip || !trip.preReport) { alert('먼저 사전신청서를 저장해주세요.'); return; }
   const r = trip.preReport;
   const w = window.open('', '_blank');
+  if (!w) { alert('팝업이 차단되었습니다. 팝업 허용 후 다시 시도해주세요.'); return; }
   w.document.write(buildPreReportHTML(r, trip));
   w.document.close();
   setTimeout(() => w.print(), 300);
@@ -276,6 +277,7 @@ function printPostReport(tripId) {
   if (!trip || !trip.postReport) { alert('먼저 보고서를 저장해주세요.'); return; }
   const r = trip.postReport;
   const w = window.open('', '_blank');
+  if (!w) { alert('팝업이 차단되었습니다. 팝업 허용 후 다시 시도해주세요.'); return; }
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>M_외근출장보고서(국내)</title>
   <style>
     body{font-family:'Noto Sans KR',sans-serif;padding:40px;color:#222;font-size:13px}

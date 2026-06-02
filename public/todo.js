@@ -121,7 +121,11 @@ function renderTodos() {
     const w = { high: 0, mid: 1, low: 2 };
     todos.sort((a, b) => (w[a.priority] ?? 1) - (w[b.priority] ?? 1));
   } else {
-    todos.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    if (todos.some(t => t.sortOrder !== undefined)) {
+      todos.sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999));
+    } else {
+      todos.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    }
   }
 
   const list = document.getElementById('todo-list');
@@ -182,9 +186,12 @@ function renderTodos() {
 
 function updateTodoBadge() {
   const count = Store.getTodos().filter(t => t.status !== 'done').length;
-  const badge = document.getElementById('todo-badge');
-  badge.textContent = count;
-  badge.style.display = count > 0 ? 'inline' : 'none';
+  ['todo-badge', 'todo-badge-panel'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = count;
+    el.style.display = count > 0 ? 'inline' : 'none';
+  });
 }
 
 // ── Status Cycle ──
@@ -490,6 +497,7 @@ function onTodoDrop(e, targetId) {
 
   const [moved] = todos.splice(srcIdx, 1);
   todos.splice(tgtIdx, 0, moved);
+  todos.forEach((t, i) => t.sortOrder = i);
   Store.saveTodos(todos);
   renderTodos();
 }
@@ -501,5 +509,3 @@ function onTodoDragEnd(e) {
   });
 }
 
-// ── Utility ──
-function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }

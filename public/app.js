@@ -100,13 +100,17 @@ const Store = {
 
 // ── UUID ──
 function uuid() {
-  return 'xxxx-xxxx-4xxx'.replace(/x/g, () => (Math.random() * 16 | 0).toString(16));
+  return crypto.randomUUID ? crypto.randomUUID() : 'xxxx-xxxx-4xxx-yxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16); });
 }
 
 // ── Date Helpers ──
 function fmtDate(d)  { return d ? new Date(d).toLocaleDateString('ko-KR') : ''; }
-function isoDate(d)  { return d ? new Date(d).toISOString().split('T')[0] : ''; }
-function today()     { return isoDate(new Date()); }
+function isoDate(d) {
+  if (!d) return '';
+  if (d instanceof Date) return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return new Date(d).toISOString().split('T')[0];
+}
+function today() { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; }
 function diffDays(dateStr) {
   const d = new Date(dateStr); d.setHours(0, 0, 0, 0);
   const t = new Date();        t.setHours(0, 0, 0, 0);
@@ -156,11 +160,10 @@ const pageTitles = {
 function navigate(page) {
   currentPage = page;
   document.querySelectorAll('.page').forEach(p  => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  const el  = document.getElementById(`page-${page}`);
-  const nav = document.querySelector(`[data-page="${page}"]`);
-  if (el)  el.classList.add('active');
-  if (nav) nav.classList.add('active');
+  document.querySelectorAll('[data-page]').forEach(n => n.classList.remove('active'));
+  const el = document.getElementById(`page-${page}`);
+  if (el) el.classList.add('active');
+  document.querySelectorAll(`[data-page="${page}"]`).forEach(n => n.classList.add('active'));
   document.getElementById('page-title').textContent = pageTitles[page] || '';
   if (page === 'dashboard') renderDashboard();
   else if (page === 'todo')      renderTodos();

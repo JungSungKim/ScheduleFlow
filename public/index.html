@@ -8,7 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="index.css?v=13">
+  <link rel="stylesheet" href="index.css?v=14">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <!-- Firebase v10 Compat SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-auth-compat.js"></script>
@@ -23,41 +24,63 @@
   
   <!-- ===== 사이드바 ===== -->
   <aside id="sidebar" class="sidebar">
-    <div class="sidebar-logo">
-      <span class="logo-icon">📅</span>
-      <span class="logo-text">ScheduleFlow</span>
-    </div>
-    <nav class="sidebar-nav">
-      <button class="nav-item active" data-page="dashboard" id="nav-dashboard">
-        <span class="nav-icon">🏠</span><span class="nav-label">대시보드</span>
-      </button>
-      <button class="nav-item" data-page="todo" id="nav-todo">
-        <span class="nav-icon">📋</span><span class="nav-label">TODO</span>
-        <span class="nav-badge" id="todo-badge" style="display:none;">0</span>
-      </button>
-      <button class="nav-item" data-page="calendar" id="nav-calendar">
-        <span class="nav-icon">📅</span><span class="nav-label">캘린더</span>
-      </button>
-      <button class="nav-item" data-page="trips" id="nav-trips">
-        <span class="nav-icon">✈️</span><span class="nav-label">출장</span>
-      </button>
-      <button class="nav-item" data-page="documents" id="nav-documents">
-        <span class="nav-icon">📄</span><span class="nav-label">문서</span>
-      </button>
-    </nav>
-    <div class="sidebar-footer">
-      <!-- 사용자 프로필 -->
-      <div class="sidebar-profile" id="sidebar-profile" onclick="toggleSettingsPanel()">
-        <div class="profile-avatar" id="profile-avatar">?</div>
-        <div class="profile-info">
-          <div class="profile-name" id="profile-name">계정</div>
-          <div class="profile-email" id="profile-email"></div>
-        </div>
-        <span class="profile-arrow">⚙</span>
+    <!-- RAIL: dark 52px icon strip -->
+    <div class="sidebar-rail">
+      <div class="rail-logo">
+        <i data-lucide="calendar-days" style="width:22px;height:22px"></i>
       </div>
-      <button class="theme-toggle" id="theme-toggle" title="테마 전환">
-        <span class="theme-icon" id="theme-icon">🌙</span>
-      </button>
+      <nav class="rail-nav">
+        <button class="rail-btn active" data-page="dashboard" id="nav-dashboard" title="대시보드">
+          <i data-lucide="layout-dashboard"></i>
+        </button>
+        <button class="rail-btn" data-page="todo" id="nav-todo" title="TODO">
+          <i data-lucide="check-square"></i>
+          <span class="rail-badge" id="todo-badge" style="display:none">0</span>
+        </button>
+        <button class="rail-btn" data-page="calendar" id="nav-calendar" title="캘린더">
+          <i data-lucide="calendar"></i>
+        </button>
+        <button class="rail-btn" data-page="trips" id="nav-trips" title="출장">
+          <i data-lucide="plane"></i>
+        </button>
+        <button class="rail-btn" data-page="documents" id="nav-documents" title="문서">
+          <i data-lucide="file-text"></i>
+        </button>
+      </nav>
+      <div class="rail-footer">
+        <button class="rail-btn" id="theme-toggle" title="테마 전환" onclick="toggleTheme()">
+          <span id="theme-icon" style="font-size:1rem;line-height:1">🌙</span>
+        </button>
+        <button class="rail-btn" title="계정 설정" onclick="toggleSettingsPanel()">
+          <div class="profile-avatar" id="profile-avatar" style="width:26px;height:26px;font-size:0.75rem;border-radius:50%;background:var(--color-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0">?</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- PANEL: text label column -->
+    <div class="sidebar-panel" id="sidebar-panel">
+      <div class="panel-logo">
+        <span class="panel-logo-text">ScheduleFlow</span>
+      </div>
+      <nav class="panel-nav">
+        <button class="panel-item active" data-page="dashboard">대시보드</button>
+        <button class="panel-item" data-page="todo">
+          TODO
+          <span class="nav-badge" id="todo-badge-panel" style="display:none">0</span>
+        </button>
+        <button class="panel-item" data-page="calendar">캘린더</button>
+        <button class="panel-item" data-page="trips">출장</button>
+        <button class="panel-item" data-page="documents">문서</button>
+      </nav>
+      <div class="panel-footer">
+        <div class="sidebar-profile" id="sidebar-profile" onclick="toggleSettingsPanel()">
+          <div class="profile-info">
+            <div class="profile-name" id="profile-name">계정</div>
+            <div class="profile-email" id="profile-email"></div>
+          </div>
+          <span class="profile-arrow">⚙</span>
+        </div>
+      </div>
     </div>
   </aside>
 
@@ -292,12 +315,13 @@
   <!-- Scripts: Firebase first, then app modules -->
   <script src="firebase-init.js?v=2"></script>
   <script src="holidays.js?v=2"></script>
-  <script src="app.js?v=12"></script>
+  <script src="app.js?v=13"></script>
   <script src="auth.js?v=4"></script>
-  <script src="todo.js?v=9"></script>
-  <script src="calendar.js?v=7"></script>
-  <script src="trips.js?v=6"></script>
-  <script src="documents.js?v=3"></script>
-  <script src="dashboard.js?v=12"></script>
+  <script src="todo.js?v=10"></script>
+  <script src="calendar.js?v=8"></script>
+  <script src="trips.js?v=7"></script>
+  <script src="documents.js?v=4"></script>
+  <script src="dashboard.js?v=13"></script>
+  <script>if (typeof lucide !== 'undefined') lucide.createIcons();</script>
 </body>
 </html>
