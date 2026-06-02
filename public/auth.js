@@ -72,8 +72,14 @@ function enterApp(user) {
 }
 
 // ── Google Sign-In ──
-// 모바일: signInWithRedirect (팝업 차단 우회), 데스크탑: signInWithPopup
-const _isMobile = /iPhone|iPad|Android|Mobile/i.test(navigator.userAgent);
+// 전략 결정:
+//   Standalone PWA → signInWithPopup
+//     (redirect는 Safari로 빠져나간 뒤 PWA 컨텍스트로 복귀 불가 — iOS 제약)
+//   일반 모바일 브라우저 → signInWithRedirect (팝업 차단 우회)
+//   데스크탑 → signInWithPopup
+const _isMobile     = /iPhone|iPad|Android|Mobile/i.test(navigator.userAgent);
+const _isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                      || window.navigator.standalone === true;
 
 async function signInWithGoogle() {
   const btn   = document.getElementById('login-btn-google');
@@ -82,12 +88,12 @@ async function signInWithGoogle() {
   label.textContent = '로그인 중...';
 
   try {
-    if (_isMobile) {
+    if (_isMobile && !_isStandalone) {
+      // 일반 모바일 브라우저: 팝업 차단 → 리다이렉트
       await fbAuth.signInWithRedirect(fbGoogleProvider);
-      // 리다이렉트 후 페이지 재로드 → getRedirectResult → onAuthStateChanged
     } else {
+      // 데스크탑 or Standalone PWA: 팝업 사용
       await fbAuth.signInWithPopup(fbGoogleProvider);
-      // onAuthStateChanged fires → handleUserLogin
     }
   } catch (e) {
     btn.disabled = false;
