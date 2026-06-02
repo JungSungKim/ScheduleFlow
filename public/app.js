@@ -231,19 +231,225 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  document.querySelectorAll('.nav-item').forEach(btn => {
+  document.querySelectorAll('[data-page]').forEach(btn => {
     btn.addEventListener('click', () => navigate(btn.dataset.page));
   });
   document.getElementById('modal-overlay').addEventListener('click', e => {
     if (e.target.id === 'modal-overlay') closeModal();
   });
   document.getElementById('btn-add-new').addEventListener('click', showAddNewModal);
-  
+
   const btnGoHome = document.getElementById('btn-go-home');
   if (btnGoHome) btnGoHome.addEventListener('click', () => navigate('dashboard'));
+
+  // Ctrl+K / Cmd+K → 검색
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
+    if (e.key === 'Escape') { closeSearch(); closeModal(); }
+  });
 
   initTodoFilters();
   initTripFilters();
   // Auth module handles initial navigation (no navigate() here)
   initAuth();
 });
+
+// ── Search ──
+let _searchOpen = false;
+
+function openSearch() {
+  if (_searchOpen) return;
+  _searchOpen = true;
+  const overlay = document.createElement('div');
+  overlay.id = 'search-overlay';
+  overlay.className = 'search-overlay';
+  overlay.innerHTML = `
+    <div class="search-box" id="search-box">
+      <div class="search-input-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" id="search-input" placeholder="할 일, 출장, 문서 검색..." autocomplete="off">
+        <span class="search-kbd">ESC</span>
+      </div>
+      <div class="search-results" id="search-results"></div>
+      <div class="search-footer">
+        <span><kbd class="search-kbd">↑↓</kbd> 이동</span>
+        <span><kbd class="search-kbd">Enter</kbd> 선택</span>
+        <span><kbd class="search-kbd">ESC</kbd> 닫기</span>
+      </div>
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeSearch(); });
+  document.body.appendChild(overlay);
+  const input = document.getElementById('search-input');
+  input.focus();
+  input.addEventListener('input', () => renderSearchResults(input.value.trim()));
+  input.addEventListener('keydown', onSearchKey);
+  renderSearchResults('');
+}
+
+function closeSearch() {
+  if (!_searchOpen) return;
+  _searchOpen = false;
+  const el = document.getElementById('search-overlay');
+  if (el) el.remove();
+}
+
+function renderSearchResults(q) {
+  const container = document.getElementById('search-results');
+  if (!container) return;
+  const lq = q.toLowerCase();
+
+  const todos  = Store.getTodos().filter(t => !q || t.title.toLowerCase().includes(lq) || (t.tags||[]).some(g => g.toLowerCase().includes(lq)));
+  const trips  = Store.getTrips().filter(t => !q || t.title.toLowerCase().includes(lq) || (t.destination||'').toLowerCase().includes(lq));
+  const docs   = Store.getTrips().filter(t => (t.preReport || t.postReport) && (!q || t.title.toLowerCase().includes(lq)));
+
+  if (!todos.length && !trips.length && !docs.length) {
+    container.innerHTML = `<div class="search-empty">${q ? `"${esc(q)}" 검색 결과 없음` : '검색어를 입력하세요'}</div>`;
+    return;
+  }
+
+  let html = '';
+  if (todos.length) {
+    html += `<div class="search-section-label">📋 할 일</div>`;
+    html += todos.slice(0, 5).map(t => {
+      const sub = t.dueDate ? fmtDate(t.dueDate) : (t.status === 'done' ? '완료' : '진행중');
+      return `<div class="search-result-item" data-action="todo" data-id="${t.id}">
+        <div class="search-result-icon">📋</div>
+        <div class="search-result-text">
+          <div class="search-result-title">${esc(t.title)}</div>
+          <div class="search-result-sub">${sub}</div>
+        </div>
+        <span class="search-result-tag">${{todo:'미완료',  'in-progress':'진행중', done:'완료'}[t.status]||''}</span>
+      </div>`;
+    }).join('');
+  }
+  if (trips.length) {
+    html += `<div class="search-section-label">✈️ 출장</div>`;
+    html += trips.slice(0, 5).map(t => `
+      <div class="search-result-item" data-action="trip" data-id="${t.id}">
+        <div class="search-result-icon">✈️</div>
+        <div class="search-result-text">
+          <div class="search-result-title">${esc(t.title)}</div>
+          <div class="search-result-sub">${esc(t.destination||'')} · ${fmtDate(t.startDate)}</div>
+        </div>
+        <span class="search-result-tag">${{planned:'계획됨','in-progress':'진행중',completed:'완료'}[t.status]||''}</span>
+      </div>`).join('');
+  }
+  if (docs.length) {
+    html += `<div class="search-section-label">📄 문서</div>`;
+    html += docs.slice(0, 3).map(t => {
+      const flags = [t.preReport ? '사전신청서' : null, t.postReport ? '보고서' : null].filter(Boolean).join(', ');
+      return `<div class="search-result-item" data-action="doc" data-id="${t.id}">
+        <div class="search-result-icon">📄</div>
+        <div class="search-result-text">
+          <div class="search-result-title">${esc(t.title)}</div>
+          <div class="search-result-sub">${flags}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  container.innerHTML = html;
+  container.querySelectorAll('.search-result-item').forEach(el => {
+    el.addEventListener('click', () => execSearchResult(el));
+  });
+}
+
+function onSearchKey(e) {
+  const items = document.querySelectorAll('#search-results .search-result-item');
+  const focused = document.querySelector('#search-results .search-result-item.focused');
+  let idx = focused ? [...items].indexOf(focused) : -1;
+  if (e.key === 'ArrowDown') { e.preventDefault(); idx = Math.min(idx + 1, items.length - 1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); idx = Math.max(idx - 1, 0); }
+  else if (e.key === 'Enter' && focused) { execSearchResult(focused); return; }
+  else return;
+  items.forEach(el => el.classList.remove('focused'));
+  if (items[idx]) items[idx].classList.add('focused');
+}
+
+function execSearchResult(el) {
+  const { action, id } = el.dataset;
+  closeSearch();
+  if (action === 'todo')  { navigate('todo');      setTimeout(() => showTodoDetail(id), 100); }
+  if (action === 'trip')  { navigate('trips');     setTimeout(() => showTripDetail(id), 100); }
+  if (action === 'doc')   { navigate('documents'); setTimeout(() => selectTripForDoc(id), 100); }
+}
+
+// ── Data Export / Import ──
+function showDataModal() {
+  const todos  = Store.getTodos();
+  const trips  = Store.getTrips();
+  const docs   = trips.filter(t => t.preReport || t.postReport);
+  openModal(`
+    <div class="modal-header">
+      <h2>💾 데이터 관리</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="export-section">
+      <h3>현재 데이터</h3>
+      <div class="export-stats">
+        <div class="export-stat"><div class="export-stat-num">${todos.length}</div><div class="export-stat-label">할 일</div></div>
+        <div class="export-stat"><div class="export-stat-num">${trips.length}</div><div class="export-stat-label">출장</div></div>
+        <div class="export-stat"><div class="export-stat-num">${docs.length}</div><div class="export-stat-label">문서</div></div>
+      </div>
+    </div>
+    <div class="export-section">
+      <h3>내보내기</h3>
+      <button class="btn btn-outline" style="width:100%;margin-bottom:8px" onclick="exportData()">
+        📥 JSON 파일로 내보내기
+      </button>
+    </div>
+    <div class="export-section">
+      <h3>가져오기</h3>
+      <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px">이전에 내보낸 JSON 파일을 불러옵니다. 기존 데이터와 병합됩니다.</p>
+      <label class="btn btn-outline" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer">
+        📤 JSON 파일 가져오기
+        <input type="file" accept=".json" style="display:none" onchange="importData(event)">
+      </label>
+    </div>
+  `);
+}
+
+function exportData() {
+  const data = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    todos: Store.getTodos(),
+    trips: Store.getTrips(),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `scheduleflow-backup-${today()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.todos && !data.trips) { alert('유효하지 않은 백업 파일입니다.'); return; }
+      if (!confirm(`할 일 ${(data.todos||[]).length}건, 출장 ${(data.trips||[]).length}건을 가져옵니다. 기존 데이터와 병합됩니다. 계속하시겠습니까?`)) return;
+
+      // 병합: 기존 ID와 중복되지 않는 항목만 추가
+      const curTodos = Store.getTodos();
+      const curTrips = Store.getTrips();
+      const curTodoIds = new Set(curTodos.map(t => t.id));
+      const curTripIds = new Set(curTrips.map(t => t.id));
+
+      const newTodos = (data.todos||[]).filter(t => !curTodoIds.has(t.id));
+      const newTrips = (data.trips||[]).filter(t => !curTripIds.has(t.id));
+
+      Store.saveTodos([...curTodos, ...newTodos]);
+      Store.saveTrips([...curTrips, ...newTrips]);
+
+      closeModal();
+      alert(`가져오기 완료: 할 일 ${newTodos.length}건, 출장 ${newTrips.length}건 추가됨`);
+      renderDashboard();
+    } catch { alert('파일을 읽을 수 없습니다.'); }
+  };
+  reader.readAsText(file);
+}

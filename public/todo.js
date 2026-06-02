@@ -431,13 +431,15 @@ function showTodoForm(editId, prefillTripId) {
         document.getElementById('tf-trip-dest').style.borderColor = 'var(--color-danger)';
         return;
       }
+      const tripStart = data.startDate || data.dueDate || today();
+      const tripEnd   = data.dueDate   || data.startDate || today();
       const newTrip = {
         id:          uuid(),
         title:       data.title,
         destination: dest,
-        startDate:   data.startDate || data.dueDate,
+        startDate:   tripStart,
         startTime:   data.startTime || null,
-        endDate:     data.dueDate || data.startDate,
+        endDate:     tripEnd,
         endTime:     data.dueTime || null,
         project:     document.getElementById('tf-trip-project')?.value.trim() || '',
         purpose:     '',
