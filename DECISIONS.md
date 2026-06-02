@@ -40,7 +40,9 @@
 | F-008 | UUID 생성 | **`crypto.randomUUID()`** | 기존 11자리 hex는 충돌 가능성. crypto.randomUUID()가 표준이며 모든 현대 브라우저 지원 |
 | F-009 | DnD 순서 보존 | **`sortOrder` 필드 스탬핑** | DnD 후 todos 배열에 `sortOrder: index` 부여, renderTodos에서 sortOrder 우선 정렬 |
 | F-010 | PWA 아이콘 | **SVG 단일 아이콘** (`icon.svg`) | PNG 생성 도구 없이 SVG one-file로 any + maskable 두 purpose 모두 커버. Chrome 93+ 지원 |
-| F-011 | SW 캐시 전략 | **Cache-first + SW 버전 = 앱 버전** (`sf-v16`) | 오프라인 지원 + 새 배포 시 CACHE_VER + PRECACHE 목록을 sw.js에서 함께 올려야 함 |
+| F-011 | SW 캐시 전략 | **Cache-first + SW 버전 = 앱 버전** (`sf-v23`) | 오프라인 지원 + 새 배포 시 CACHE_VER + PRECACHE 목록을 sw.js에서 함께 올려야 함 |
+| F-012 | Firebase authDomain | **`web.app` 고정** (`my-scheduleflow-dev.web.app`) | `firebaseapp.com` 사용 시 iOS PWA standalone에서 cross-origin postMessage 차단. `web.app/__/auth/handler`를 GCC OAuth 클라이언트 redirect URI에 등록 필요 (UI 전용, API 불가) |
+| F-013 | 모바일 로그인 전략 | **Standalone → popup / 일반 모바일 → redirect** | iOS Standalone에서 redirect는 PWA 컨텍스트 영구 이탈. `_isMobile` + `_isStandalone` 플래그로 분기 (auth.js) |
 
 ---
 

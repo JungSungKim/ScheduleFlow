@@ -4,10 +4,40 @@
 
 | 항목 | 내용 |
 |------|------|
-| 최종 갱신 | 2026-06-02 |
+| 최종 갱신 | 2026-06-03 |
 | 브랜치 | master |
-| 최신 커밋 | 9b21a41 |
-| 미커밋 변경 | 있음 (폴더 구조 재정비 진행 중) |
+| 최신 커밋 | 789c663 |
+| 미커밋 변경 | 없음 |
+
+---
+
+## 2026-06-03
+
+### 완료 작업
+
+**iOS PWA 로그인 최종 해결**
+- `authDomain: "my-scheduleflow-dev.web.app"` 변경으로 cross-origin postMessage 문제 해결
+- Google Cloud Console → APIs & Services → Credentials → Web client → 승인된 리디렉션 URI에 `https://my-scheduleflow-dev.web.app/__/auth/handler` 수동 등록
+- OAuth 변경 적용 후 PWA 로그인 정상 확인
+
+**모바일 UI 버그 수정**
+- 헤더 `대시보드` 타이틀 2줄: `.page-title { font-size: 1rem; white-space: nowrap }` + `#btn-search span { display: none }` (Ctrl+K 텍스트 숨김)
+- TODO 페이지 가로 폭 이탈(배율 변경): `.todo-meta { flex-wrap: wrap }` 추가로 날짜·태그·출장 배지 overflow 방지
+
+**프로젝트 설정 개선**
+- `.claude/settings.local.json` git 추적 시작 — 다른 PC pull 시 MCP 설정 연속성 유지
+- CLAUDE.md 대폭 개선: sw.js/manifest/icon.svg 구조, PWA/iOS 로그인 전략, SW 캐시 버전 동기화 규칙, 이중 바인딩 주의사항, Firebase CLI 토큰 경로
+
+### 의사결정
+
+- **authDomain = web.app 유지**: `firebaseapp.com`으로 복귀하면 iOS PWA standalone에서 cross-origin popup postMessage 재차단. 비가역적 선택
+- **OAuth redirect URI는 UI 전용 작업**: REST API로 수정 불가. Google Cloud Console에서 수동 유지 필요
+
+### 다음 할 일
+
+- [ ] Phase 4: AI 문서 초안 (Claude API) — P-003 결정 필요 (직접 호출 vs Firebase Functions)
+- [ ] 모바일 TODO 페이지 추가 UX 검토 (drag handle 터치 지원 여부)
+- [ ] Phase 3 잔여: 문서 템플릿 기본값 저장 후 UX 개선 (기존 저장 여부 표시)
 
 ---
 
