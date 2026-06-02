@@ -3,12 +3,12 @@
    버전을 올릴 때 CACHE_VER + PRECACHE 목록도 동기화할 것
    ================================================ */
 
-const CACHE_VER = 'sf-v22';
+const CACHE_VER = 'sf-v23';
 
 // 오프라인 캐시 대상 (버전 쿼리스트링 포함)
 const PRECACHE = [
   '/',
-  '/index.css?v=16',
+  '/index.css?v=17',
   '/firebase-init.js?v=3',
   '/holidays.js?v=2',
   '/app.js?v=18',

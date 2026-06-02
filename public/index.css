@@ -611,7 +611,8 @@ p  { line-height: 1.6; color: var(--text-secondary); }
 
 .todo-meta {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 6px 10px;
   font-size: 0.78rem;
   color: var(--text-muted);
 }
@@ -1707,7 +1708,21 @@ p  { line-height: 1.6; color: var(--text-secondary); }
   
   /* 상단 헤더 패딩 축소 */
   .top-header {
-    padding: 0 16px;
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  /* 타이틀 폰트 축소 + 줄바꿈 방지 */
+  .page-title {
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* 헤더 검색 버튼 Ctrl+K 텍스트 숨김 */
+  #btn-search span {
+    display: none;
   }
   
   /* 페이지 컨테이너 패딩 축소 */
