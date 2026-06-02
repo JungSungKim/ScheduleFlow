@@ -192,12 +192,18 @@ Store.getNotifEnabled() / Store.saveNotifEnabled(bool) // localStorage: sf_notif
 - iOS Standalone에서 `signInWithRedirect`는 PWA 컨텍스트를 영구 이탈시키므로 금지
 - `authDomain`은 반드시 `web.app` 유지 (`firebaseapp.com`으로 되돌리면 iOS PWA에서 cross-origin postMessage 차단됨)
 - `web.app/__/auth/handler`는 Google Cloud Console OAuth 클라이언트의 승인된 리디렉션 URI에 등록 필요
+  → GCC → APIs & Services → Credentials → Web client → 승인된 리디렉션 URI
+  → REST API로는 OAuth 클라이언트 수정 불가 (UI 전용 작업)
 
 ### 서비스 워커 캐시 버전 동기화 (sw.js)
 - `public/` 파일 변경 시 반드시 두 곳 동시 업데이트:
   1. `index.html` — 해당 파일의 `?v=N` 쿼리스트링 증가
   2. `sw.js` — `CACHE_VER` 문자열 증가 + `PRECACHE` 배열의 버전 번호 동기화
 - `CACHE_VER`이 바뀌면 activate 시 이전 캐시 자동 삭제됨
+
+### Firebase CLI 토큰
+- 경로: `C:/Users/{user}/.config/configstore/firebase-tools.json` → `tokens.access_token`
+- 스코프: `cloud-platform` (IAM·Firebase·Firestore API 호출 가능, OAuth 클라이언트 관리 불가)
 
 ### 이벤트 핸들러 이중 바인딩 주의
 - HTML에 `onclick="fn()"` 속성이 있는 요소에 `addEventListener('click', fn)`을 추가하면 함수가 두 번 호출됨
