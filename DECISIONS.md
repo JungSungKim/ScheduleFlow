@@ -34,6 +34,13 @@
 | F-002 | 공휴일 | **한국 공휴일 하드코딩** (holidays.js) | 외부 API 의존성 제거 |
 | F-003 | 캘린더 바 | **겹침 스택 알고리즘** | 다중 출장 기간 시각화 |
 | F-004 | 테마 | **CSS 변수 기반 다크/라이트** | 런타임 전환, 별도 CSS 파일 불필요 |
+| F-005 | 디자인 방향 | **Direction B — Modern Minimal** (중립 그레이 팔레트) | 따뜻한 크림 계열(Direction A)에서 중립 회색 계열로 전환. Phase 1 적용 완료 (2026-06-02) |
+| F-006 | 사이드바 구조 | **2-column: 52px rail(dark) + 200px panel(white)** | Direction B 핸즈오프 스펙 Phase 1 채택. rail은 icon-only, panel은 text label. Lucide CDN 아이콘 사용 |
+| F-007 | isTrip 판별 | **`'preReport' in t`** | `destination` 유무는 취약 (trip-linked TODO도 destination 가질 수 있음). preReport/postReport는 Trip 객체 전용 필드 |
+| F-008 | UUID 생성 | **`crypto.randomUUID()`** | 기존 11자리 hex는 충돌 가능성. crypto.randomUUID()가 표준이며 모든 현대 브라우저 지원 |
+| F-009 | DnD 순서 보존 | **`sortOrder` 필드 스탬핑** | DnD 후 todos 배열에 `sortOrder: index` 부여, renderTodos에서 sortOrder 우선 정렬 |
+| F-010 | PWA 아이콘 | **SVG 단일 아이콘** (`icon.svg`) | PNG 생성 도구 없이 SVG one-file로 any + maskable 두 purpose 모두 커버. Chrome 93+ 지원 |
+| F-011 | SW 캐시 전략 | **Cache-first + SW 버전 = 앱 버전** (`sf-v16`) | 오프라인 지원 + 새 배포 시 CACHE_VER + PRECACHE 목록을 sw.js에서 함께 올려야 함 |
 
 ---
 
@@ -42,5 +49,5 @@
 | ID | 항목 | 현재 방향 | 결정 필요 시점 |
 |----|------|-----------|--------------|
 | P-001 | PDF 내보내기 방식 | `window.print()` vs `jsPDF` vs 서버사이드 | Phase 2 문서 기능 시작 전 |
-| P-002 | PWA 지원 | manifest.json + service worker 추가 | Phase 3 시작 전 |
+| ~~P-002~~ | ~~PWA 지원~~ | ✅ 완료 (2026-06-02) | |
 | P-003 | AI 문서 초안 | Claude API 직접 호출 vs Firebase Functions 경유 | Phase 4 시작 전 (보안 고려) |

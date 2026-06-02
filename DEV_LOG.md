@@ -32,7 +32,25 @@
 
 ### 다음 할 일
 
-- [ ] Phase 3: TODO → 캘린더 드래그로 날짜 변경
-- [ ] Phase 3: 알림/리마인더 (PWA Push)
+- [x] Phase 3: TODO → 캘린더 드래그로 날짜 변경
+- [x] Phase 3: 알림/리마인더 (브라우저 Notification API)
+- [x] 문서 템플릿 커스터마이징 UI
 - [ ] Phase 4: AI 문서 초안 (Claude API)
-- [ ] 문서 템플릿 커스터마이징 UI
+
+**Phase 3 완료 작업 (2026-06-02)**
+- TODO → 캘린더 드래그: `todo.js` dragstart에 `text/plain:todo:{id}` 세팅; `calendar.js` `calDayDrop()` 함수 + `.drop-target` CSS
+- 알림/리마인더: `app.js` Notification API + setInterval 1분 체크; 마감 30분 전/오늘 마감 알림; settings 패널 토글 스위치
+- 문서 템플릿: `Store.getDocTemplate/saveDocTemplate` + 사전신청서·보고서 폼에 "기본값 저장" 버튼 + 저장된 기본값 자동 채움
+
+---
+
+## 2026-06-02 (추가)
+
+### 완료 작업
+
+**PWA 설치 지원 (Phase 3)**
+- `public/manifest.json`: name/short_name/theme_color/#1C1C1E/display:standalone
+- `public/icon.svg`: 512×512 SVG 캘린더 아이콘 (maskable + any purpose)
+- `public/sw.js`: Cache-first 서비스 워커, Firebase 도메인 캐시 스킵, 오프라인 폴백
+- `index.html`: manifest link, PWA 메타태그(apple-mobile-web-app-*), SW 등록 스크립트
+- `app.js v16`: `beforeinstallprompt` 핸들러 + "앱 설치" 버튼(헤더, 평소 hidden)

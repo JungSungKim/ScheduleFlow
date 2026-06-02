@@ -26,9 +26,9 @@
 
 ## Phase 3 — 고도화
 - [x] 반복 일정 (매일/매주/매월) — todoMatchesRepeat + expandRecurringTodos
-- [ ] TODO → 캘린더 연동 강화 (드래그로 날짜 변경)
-- [ ] 알림 / 리마인더 (PWA Push Notification)
-- [ ] 모바일 PWA 설치 지원 (manifest.json + service worker)
+- [x] TODO → 캘린더 연동 강화 (드래그로 날짜 변경)
+- [x] 알림 / 리마인더 (브라우저 Notification API, 마감 30분 전)
+- [x] 모바일 PWA 설치 지원 (manifest.json + sw.js + beforeinstallprompt)
 - [ ] 다중 계정 / 팀 공유
 
 ## Phase 4 — AI 기능

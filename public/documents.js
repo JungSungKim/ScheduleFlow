@@ -45,30 +45,34 @@ function showPreReport(tripId) {
   const trip = Store.getTrips().find(t => t.id === tripId);
   if (!trip) return;
   const r = trip.preReport || {};
+  const tpl = Store.getDocTemplate();
+  // 템플릿 우선순위: 저장된 값 > 템플릿 기본값 > 빈 값
+  const v = (field, fallback = '') => esc(r[field] || tpl[field] || fallback);
   const area = document.getElementById('doc-editor-area');
   area.innerHTML = `
     <div class="flex-between mb-16">
       <h2>M_출장사전신청서</h2>
       <div style="display:flex;gap:8px">
+        <button class="btn btn-outline btn-sm" onclick="savePreTemplate()">📌 기본값 저장</button>
         <button class="btn btn-outline btn-sm" onclick="selectTripForDoc('${tripId}')">← 돌아가기</button>
         <button class="btn btn-primary btn-sm" onclick="printPreReport('${tripId}')">🖨️ 인쇄/PDF</button>
       </div>
     </div>
     <form id="pre-report-form" class="doc-form">
       <div class="form-row">
-        <div class="form-group"><label class="form-label">기안 부서</label><input class="form-input" id="pr-dept" value="${esc(r.dept||'')}"></div>
-        <div class="form-group"><label class="form-label">기안자</label><input class="form-input" id="pr-writer" value="${esc(r.writer||'')}"></div>
+        <div class="form-group"><label class="form-label">기안 부서</label><input class="form-input" id="pr-dept" value="${v('dept')}"></div>
+        <div class="form-group"><label class="form-label">기안자</label><input class="form-input" id="pr-writer" value="${v('writer')}"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">기안 일자</label><input class="form-input" type="date" id="pr-date" value="${r.date||today()}"></div>
-        <div class="form-group"><label class="form-label">보존 연한/보안 등급</label><input class="form-input" id="pr-security" value="${esc(r.security||'5년 / S등급')}"></div>
+        <div class="form-group"><label class="form-label">보존 연한/보안 등급</label><input class="form-input" id="pr-security" value="${v('security', '5년 / S등급')}"></div>
       </div>
       <hr style="border-color:var(--border-color);margin:16px 0">
       <div class="form-row">
-        <div class="form-group"><label class="form-label">신청자 부서</label><input class="form-input" id="pr-applicant-dept" value="${esc(r.applicantDept||r.dept||'')}"></div>
-        <div class="form-group"><label class="form-label">직급</label><input class="form-input" id="pr-rank" value="${esc(r.rank||'')}"></div>
+        <div class="form-group"><label class="form-label">신청자 부서</label><input class="form-input" id="pr-applicant-dept" value="${esc(r.applicantDept || tpl.applicantDept || r.dept || tpl.dept || '')}"></div>
+        <div class="form-group"><label class="form-label">직급</label><input class="form-input" id="pr-rank" value="${v('rank')}"></div>
       </div>
-      <div class="form-group"><label class="form-label">성명</label><input class="form-input" id="pr-name" value="${esc(r.name||r.writer||'')}"></div>
+      <div class="form-group"><label class="form-label">성명</label><input class="form-input" id="pr-name" value="${esc(r.name || tpl.name || r.writer || tpl.writer || '')}"></div>
       <div class="form-group"><label class="form-label">기간</label><input class="form-input" id="pr-period" value="${esc(r.period||trip.startDate+' ~ '+trip.endDate)}"></div>
       <div class="form-group"><label class="form-label">사업명(계약명)</label><input class="form-input" id="pr-project" value="${esc(r.project||trip.project||'')}"></div>
       <div class="form-group"><label class="form-label">방문처</label><input class="form-input" id="pr-visit" value="${esc(r.visit||trip.destination||'')}"></div>
@@ -84,6 +88,18 @@ function showPreReport(tripId) {
     e.preventDefault();
     savePreReport(tripId);
   });
+}
+
+function savePreTemplate() {
+  const tpl = Store.getDocTemplate();
+  tpl.dept          = document.getElementById('pr-dept')?.value || tpl.dept || '';
+  tpl.writer        = document.getElementById('pr-writer')?.value || tpl.writer || '';
+  tpl.security      = document.getElementById('pr-security')?.value || tpl.security || '';
+  tpl.applicantDept = document.getElementById('pr-applicant-dept')?.value || tpl.applicantDept || '';
+  tpl.rank          = document.getElementById('pr-rank')?.value || tpl.rank || '';
+  tpl.name          = document.getElementById('pr-name')?.value || tpl.name || '';
+  Store.saveDocTemplate(tpl);
+  alert('기본값이 저장되었습니다. 다음 문서 작성 시 자동으로 채워집니다.');
 }
 
 function savePreReport(tripId) {
@@ -160,24 +176,27 @@ function showPostReport(tripId) {
   const trip = Store.getTrips().find(t => t.id === tripId);
   if (!trip) return;
   const r = trip.postReport || {};
+  const tpl = Store.getDocTemplate();
+  const vp = (field, fallback = '') => esc(r[field] || tpl[field] || fallback);
   const schedRows = r.schedule || [{time:'',place:'',task:''}];
   const area = document.getElementById('doc-editor-area');
   area.innerHTML = `
     <div class="flex-between mb-16">
       <h2>M_외근출장보고서(국내)</h2>
       <div style="display:flex;gap:8px">
+        <button class="btn btn-outline btn-sm" onclick="savePostTemplate()">📌 기본값 저장</button>
         <button class="btn btn-outline btn-sm" onclick="selectTripForDoc('${tripId}')">← 돌아가기</button>
         <button class="btn btn-primary btn-sm" onclick="printPostReport('${tripId}')">🖨️ 인쇄/PDF</button>
       </div>
     </div>
     <form id="post-report-form">
       <div class="form-row">
-        <div class="form-group"><label class="form-label">기안 부서</label><input class="form-input" id="po-dept" value="${esc(r.dept||'')}"></div>
-        <div class="form-group"><label class="form-label">기안자</label><input class="form-input" id="po-writer" value="${esc(r.writer||'')}"></div>
+        <div class="form-group"><label class="form-label">기안 부서</label><input class="form-input" id="po-dept" value="${vp('dept')}"></div>
+        <div class="form-group"><label class="form-label">기안자</label><input class="form-input" id="po-writer" value="${vp('writer')}"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">기안 일자</label><input class="form-input" type="date" id="po-date" value="${r.date||today()}"></div>
-        <div class="form-group"><label class="form-label">보존 연한/보안 등급</label><input class="form-input" id="po-security" value="${esc(r.security||'5년 / B등급')}"></div>
+        <div class="form-group"><label class="form-label">보존 연한/보안 등급</label><input class="form-input" id="po-security" value="${vp('security_post', '5년 / B등급')}"></div>
       </div>
       <hr style="border-color:var(--border-color);margin:16px 0">
       <div class="form-row">
@@ -216,6 +235,15 @@ function showPostReport(tripId) {
     e.preventDefault();
     savePostReport(tripId);
   });
+}
+
+function savePostTemplate() {
+  const tpl = Store.getDocTemplate();
+  tpl.dept        = document.getElementById('po-dept')?.value || tpl.dept || '';
+  tpl.writer      = document.getElementById('po-writer')?.value || tpl.writer || '';
+  tpl.security_post = document.getElementById('po-security')?.value || tpl.security_post || '';
+  Store.saveDocTemplate(tpl);
+  alert('기본값이 저장되었습니다. 다음 문서 작성 시 자동으로 채워집니다.');
 }
 
 function scheduleRowHTML(idx, s) {

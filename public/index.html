@@ -8,7 +8,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="index.css?v=15">
+  <link rel="stylesheet" href="index.css?v=16">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1C1C1E">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ScheduleFlow">
+  <link rel="apple-touch-icon" href="icon.svg">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <!-- Firebase v10 Compat SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
@@ -126,6 +132,20 @@
     <div class="settings-body">
       <div id="settings-user-info"></div>
       <hr style="margin:12px 0;border-color:var(--border-color)">
+
+      <!-- 알림 토글 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;margin-bottom:4px">
+        <div>
+          <div style="font-size:0.88rem;font-weight:500">🔔 마감 알림</div>
+          <div style="font-size:0.75rem;color:var(--text-muted)">마감 30분 전 브라우저 알림</div>
+        </div>
+        <label class="notif-toggle-wrap" onclick="toggleNotifications()">
+          <input type="checkbox" id="notif-toggle" style="display:none">
+          <span class="notif-toggle-track"></span>
+        </label>
+      </div>
+      <hr style="margin:12px 0;border-color:var(--border-color)">
+
       <button class="btn btn-outline" onclick="signOut()" style="width:100%;margin-bottom:8px">
         🚪 로그아웃
       </button>
@@ -159,6 +179,10 @@
         </button>
         <button class="btn btn-outline btn-sm" onclick="showDataModal()" title="데이터 관리" style="display:flex;align-items:center;gap:4px">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+        <button class="btn btn-outline btn-sm" id="pwa-install-btn" onclick="triggerPwaInstall()" title="앱 설치" style="display:none;align-items:center;gap:5px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v13m0 0l-4-4m4 4l4-4"/><rect x="2" y="17" width="20" height="5" rx="2"/></svg>
+          앱 설치
         </button>
         <button class="btn btn-primary btn-sm" id="btn-add-new">
           <span>＋</span> 새 일정
@@ -322,13 +346,21 @@
   <!-- Scripts: Firebase first, then app modules -->
   <script src="firebase-init.js?v=2"></script>
   <script src="holidays.js?v=2"></script>
-  <script src="app.js?v=15"></script>
+  <script src="app.js?v=17"></script>
   <script src="auth.js?v=4"></script>
-  <script src="todo.js?v=11"></script>
-  <script src="calendar.js?v=9"></script>
+  <script src="todo.js?v=12"></script>
+  <script src="calendar.js?v=10"></script>
   <script src="trips.js?v=7"></script>
-  <script src="documents.js?v=4"></script>
+  <script src="documents.js?v=5"></script>
   <script src="dashboard.js?v=14"></script>
   <script>if (typeof lucide !== 'undefined') lucide.createIcons();</script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .catch(err => console.warn('SW 등록 실패:', err));
+      });
+    }
+  </script>
 </body>
 </html>

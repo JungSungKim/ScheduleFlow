@@ -177,7 +177,11 @@ function renderCalendar() {
     }
 
     html += `<div class="cal-day ${isOtherMonth ? 'other-month' : ''} ${isToday ? 'today' : ''} ${isActive ? 'selected' : ''} ${isHoliday ? 'holiday' : ''}"
-                  onclick="onCalDayClick('${dateStr}')">
+                  onclick="onCalDayClick('${dateStr}')"
+                  ondragover="calDayDragOver(event)"
+                  ondragleave="calDayDragLeave(event)"
+                  ondrop="calDayDrop(event,'${dateStr}')"
+                  data-date="${dateStr}">
                <span class="cal-day-num">${day}</span>
                ${holidayName ? `<div style="font-size:0.65rem;color:#E07070;margin-top:-6px;margin-bottom:2px;padding:0 8px">${esc(holidayName)}</div>` : ''}
                ${eventsHtml}
@@ -293,4 +297,40 @@ function closeDayPanel() {
   document.getElementById('day-panel').classList.remove('open');
   document.getElementById('day-panel-backdrop').style.display = 'none';
   renderCalendar();
+}
+
+// ── TODO → 캘린더 드래그로 날짜 변경 ──
+function calDayDragOver(e) {
+  const data = e.dataTransfer.types.includes('text/plain');
+  if (!data) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drop-target');
+}
+
+function calDayDragLeave(e) {
+  e.currentTarget.classList.remove('drop-target');
+}
+
+function calDayDrop(e, dateStr) {
+  e.preventDefault();
+  e.stopPropagation();
+  e.currentTarget.classList.remove('drop-target');
+
+  const raw = e.dataTransfer.getData('text/plain');
+  if (!raw.startsWith('todo:')) return;
+  const todoId = raw.slice(5);
+
+  const todos = Store.getTodos();
+  const t = todos.find(x => x.id === todoId);
+  if (!t) return;
+
+  // 기간 일정이면 dueDate만, 단일 날짜면 startDate도 동기화
+  if (t.startDate && t.startDate === t.dueDate) t.startDate = dateStr;
+  t.dueDate = dateStr;
+
+  Store.saveTodos(todos);
+  renderCalendar();
+  if (typeof renderTodos === 'function') renderTodos();
+  if (typeof renderDashboard === 'function') renderDashboard();
 }
