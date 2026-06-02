@@ -474,6 +474,7 @@ function showTodoForm(editId, prefillTripId) {
 function onTodoDragStart(e, id) {
   dragSrcId = id;
   e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', 'todo:' + id); // 캘린더 드롭 타겟에서 읽음
   setTimeout(() => {
     const el = document.querySelector(`.todo-item[data-id="${id}"]`);
     if (el) el.classList.add('dragging');

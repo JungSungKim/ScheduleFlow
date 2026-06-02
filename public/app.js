@@ -3,6 +3,34 @@
    Write-Through Cache: Cache → localStorage → Firestore
    ================================================ */
 
+// ── PWA 설치 프롬프트 ──
+let _pwaPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  _pwaPrompt = e;
+  const btn = document.getElementById('pwa-install-btn');
+  if (btn) btn.style.display = 'flex';
+});
+
+window.addEventListener('appinstalled', () => {
+  _pwaPrompt = null;
+  const btn = document.getElementById('pwa-install-btn');
+  if (btn) btn.style.display = 'none';
+});
+
+function triggerPwaInstall() {
+  if (!_pwaPrompt) return;
+  _pwaPrompt.prompt();
+  _pwaPrompt.userChoice.then(result => {
+    if (result.outcome === 'accepted') {
+      const btn = document.getElementById('pwa-install-btn');
+      if (btn) btn.style.display = 'none';
+    }
+    _pwaPrompt = null;
+  });
+}
+
 // ── In-Memory Cache ──
 const Cache = { todos: null, trips: null };
 
@@ -39,12 +67,24 @@ const Store = {
   getTheme()   { return localStorage.getItem('sf_theme') || 'light'; },
   saveTheme(t) { localStorage.setItem('sf_theme', t); },
 
-  getDashboardOrder() { 
+  getDashboardOrder() {
     try { return JSON.parse(localStorage.getItem('sf_dash_order')); } catch(e) { return null; }
   },
-  saveDashboardOrder(order) { 
-    localStorage.setItem('sf_dash_order', JSON.stringify(order)); 
+  saveDashboardOrder(order) {
+    localStorage.setItem('sf_dash_order', JSON.stringify(order));
   },
+
+  // ── 문서 기본값 템플릿 (로컬 전용) ──
+  getDocTemplate() {
+    try { return JSON.parse(localStorage.getItem('sf_doc_template') || '{}'); } catch(e) { return {}; }
+  },
+  saveDocTemplate(tpl) {
+    localStorage.setItem('sf_doc_template', JSON.stringify(tpl));
+  },
+
+  // ── 알림 설정 (로컬 전용) ──
+  getNotifEnabled() { return localStorage.getItem('sf_notif') === '1'; },
+  saveNotifEnabled(v) { localStorage.setItem('sf_notif', v ? '1' : '0'); },
 
   // ── Writes: Cache + localStorage + async Firestore ──
   saveTodos(list) {
@@ -264,6 +304,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initTodoFilters();
   initTripFilters();
+  initNotifications();
+  _syncNotifToggleUI();
   // Auth module handles initial navigation (no navigate() here)
   initAuth();
 });
@@ -466,4 +508,97 @@ function importData(e) {
     } catch { alert('파일을 읽을 수 없습니다.'); }
   };
   reader.readAsText(file);
+}
+
+// ════════════════════════════════════════════════
+//  알림 / 리마인더 시스템
+// ════════════════════════════════════════════════
+
+const _notifShown = new Set(); // 세션 내 중복 방지: `${todoId}-${dateStr}`
+let _notifTimer = null;
+
+function initNotifications() {
+  if (!('Notification' in window)) return;
+  if (Store.getNotifEnabled()) _startNotifLoop();
+}
+
+function _startNotifLoop() {
+  if (_notifTimer) return;
+  checkUpcomingReminders();
+  _notifTimer = setInterval(checkUpcomingReminders, 60_000);
+}
+
+function _stopNotifLoop() {
+  clearInterval(_notifTimer);
+  _notifTimer = null;
+}
+
+async function requestNotifPermission() {
+  if (!('Notification' in window)) {
+    alert('이 브라우저는 알림을 지원하지 않습니다.');
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  const enabled = perm === 'granted';
+  Store.saveNotifEnabled(enabled);
+  _syncNotifToggleUI();
+  if (enabled) {
+    _startNotifLoop();
+    alert('알림이 활성화되었습니다. 마감 30분 전에 알림을 보내드립니다.');
+  } else {
+    alert('알림 권한이 거부되었습니다. 브라우저 설정에서 허용해주세요.');
+  }
+}
+
+function toggleNotifications() {
+  if (!('Notification' in window)) return;
+  if (!Store.getNotifEnabled()) {
+    requestNotifPermission();
+  } else {
+    Store.saveNotifEnabled(false);
+    _stopNotifLoop();
+    _syncNotifToggleUI();
+  }
+}
+
+function _syncNotifToggleUI() {
+  const toggle = document.getElementById('notif-toggle');
+  if (!toggle) return;
+  const enabled = Store.getNotifEnabled();
+  toggle.checked = enabled;
+}
+
+function checkUpcomingReminders() {
+  if (Notification.permission !== 'granted') return;
+  const now = new Date();
+  const todayStr = today();
+  Store.getTodos()
+    .filter(t => t.status !== 'done' && t.dueDate)
+    .forEach(t => {
+      const key = `${t.id}-${t.dueDate}`;
+      if (_notifShown.has(key)) return;
+
+      let shouldNotify = false;
+
+      if (t.dueDate === todayStr && t.dueTime) {
+        // 마감 시간 30분 전 알림
+        const [h, m] = t.dueTime.split(':').map(Number);
+        const dueMs = new Date(todayStr + 'T' + t.dueTime).getTime();
+        const diffMin = (dueMs - now.getTime()) / 60_000;
+        if (diffMin >= 0 && diffMin <= 30) shouldNotify = true;
+      } else if (t.dueDate === todayStr && !t.dueTime) {
+        // 오늘 마감, 시간 없음 → 09:00~09:01 사이에 한 번
+        if (now.getHours() === 9 && now.getMinutes() === 0) shouldNotify = true;
+      }
+
+      if (shouldNotify) {
+        _notifShown.add(key);
+        const timeLabel = t.dueTime ? `${fmtTimeAmPm(t.dueTime)} 마감` : '오늘 마감';
+        new Notification('ScheduleFlow 리마인더', {
+          body: `${t.title} — ${timeLabel}`,
+          icon: '/icon.svg',
+          tag: key,
+        });
+      }
+    });
 }

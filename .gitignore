@@ -23,3 +23,8 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Temp / tool files
+*.tmp.*
+*.tmp
+.code-review-graph/
