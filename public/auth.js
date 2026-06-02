@@ -5,6 +5,13 @@
 
 // ── Auth State Listener (entry point) ──
 function initAuth() {
+  // 모바일 리다이렉트 로그인 결과 처리
+  fbAuth.getRedirectResult().catch(e => {
+    if (e.code && e.code !== 'auth/no-current-user') {
+      alert('로그인 오류: ' + e.message);
+    }
+  });
+
   fbAuth.onAuthStateChanged(async (user) => {
     if (user) {
       await handleUserLogin(user);
@@ -65,6 +72,9 @@ function enterApp(user) {
 }
 
 // ── Google Sign-In ──
+// 모바일: signInWithRedirect (팝업 차단 우회), 데스크탑: signInWithPopup
+const _isMobile = /iPhone|iPad|Android|Mobile/i.test(navigator.userAgent);
+
 async function signInWithGoogle() {
   const btn   = document.getElementById('login-btn-google');
   const label = document.getElementById('login-btn-label');
@@ -72,8 +82,13 @@ async function signInWithGoogle() {
   label.textContent = '로그인 중...';
 
   try {
-    await fbAuth.signInWithPopup(fbGoogleProvider);
-    // onAuthStateChanged fires → handleUserLogin
+    if (_isMobile) {
+      await fbAuth.signInWithRedirect(fbGoogleProvider);
+      // 리다이렉트 후 페이지 재로드 → getRedirectResult → onAuthStateChanged
+    } else {
+      await fbAuth.signInWithPopup(fbGoogleProvider);
+      // onAuthStateChanged fires → handleUserLogin
+    }
   } catch (e) {
     btn.disabled = false;
     label.textContent = 'Google로 계속하기';
