@@ -52,4 +52,3 @@
 |----|------|-----------|--------------|
 | P-001 | PDF 내보내기 방식 | `window.print()` vs `jsPDF` vs 서버사이드 | Phase 2 문서 기능 시작 전 |
 | ~~P-002~~ | ~~PWA 지원~~ | ✅ 완료 (2026-06-02) | |
-| P-003 | AI 문서 초안 | Claude API 직접 호출 vs Firebase Functions 경유 | Phase 4 시작 전 (보안 고려) |

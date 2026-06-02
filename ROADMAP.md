@@ -31,7 +31,6 @@
 - [x] 모바일 PWA 설치 지원 (manifest.json + sw.js + beforeinstallprompt)
 - [ ] 다중 계정 / 팀 공유
 
-## Phase 4 — AI 기능
-- [ ] 출장 문서 AI 자동 초안 작성 (Claude API)
-- [ ] 일정 충돌 감지 및 제안
+## Phase 4 — 고도화
+- [ ] 일정 충돌 감지 및 알림
 - [ ] 자연어 일정 입력 파싱
