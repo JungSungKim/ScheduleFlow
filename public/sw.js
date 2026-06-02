@@ -3,7 +3,7 @@
    버전을 올릴 때 CACHE_VER + PRECACHE 목록도 동기화할 것
    ================================================ */
 
-const CACHE_VER = 'sf-v19';
+const CACHE_VER = 'sf-v20';
 
 // 오프라인 캐시 대상 (버전 쿼리스트링 포함)
 const PRECACHE = [
@@ -34,7 +34,11 @@ const SKIP_CACHE_HOSTS = [
 ];
 
 function shouldSkip(url) {
-  return SKIP_CACHE_HOSTS.some(h => url.hostname.includes(h));
+  // Firebase 외부 도메인
+  if (SKIP_CACHE_HOSTS.some(h => url.hostname.includes(h))) return true;
+  // Firebase Auth 내부 경로 (/__/auth/) — 리다이렉트 로그인 흐름에 필수
+  if (url.pathname.startsWith('/__/')) return true;
+  return false;
 }
 
 // ── Install: 정적 자산 사전 캐시 ──
