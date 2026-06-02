@@ -129,6 +129,20 @@ function fmtTimeAmPm(timeStr) {
   return h < 12 ? '오전' : '오후';
 }
 
+// ── Recurrence Helper ──
+function todoMatchesRepeat(t, dateStr) {
+  const baseDate = t.startDate || t.dueDate;
+  if (!baseDate || !t.repeat || t.repeat === 'none') return false;
+  if (dateStr < baseDate) return false;
+  const base = new Date(baseDate + 'T00:00:00');
+  const date = new Date(dateStr  + 'T00:00:00');
+  const diffDays = Math.round((date - base) / 86400000);
+  if (t.repeat === 'daily')   return true;
+  if (t.repeat === 'weekly')  return diffDays % 7 === 0;
+  if (t.repeat === 'monthly') return date.getDate() === base.getDate();
+  return false;
+}
+
 // ── Escape HTML ──
 function esc(str) {
   return String(str || '')

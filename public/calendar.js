@@ -24,10 +24,25 @@ function initCalDate() {
 
 // ── Day-panel date match helper ──
 function todoAppearsOn(t, dateStr) {
+  if (t.repeat && t.repeat !== 'none') return todoMatchesRepeat(t, dateStr);
   const start = t.startDate || t.dueDate;
   const end   = t.dueDate   || t.startDate;
   if (!start && !end) return false;
   return dateStr >= (start || end) && dateStr <= (end || start);
+}
+
+// ── Expand recurring todos into single-day virtual instances ──
+function expandRecurringTodos(todos, visibleDates) {
+  const result = [];
+  todos.forEach(t => {
+    if (!t.repeat || t.repeat === 'none') { result.push(t); return; }
+    visibleDates.forEach(d => {
+      if (todoMatchesRepeat(t, d)) {
+        result.push({ ...t, startDate: d, dueDate: d, _virtual: true });
+      }
+    });
+  });
+  return result;
 }
 
 // ── Recurrence & Date Match Helper ──
@@ -69,8 +84,9 @@ function renderCalendar() {
     visibleDates.push(isoDate(d));
   }
 
-  // -- 2. Collect and sort events
-  const todos = Store.getTodos().filter(t => t.status !== 'done');
+  // -- 2. Collect and sort events (expand recurring todos to single-day instances)
+  const rawTodos = Store.getTodos().filter(t => t.status !== 'done');
+  const todos = expandRecurringTodos(rawTodos, visibleDates);
   const trips = Store.getTrips();
   let allEvents = [...todos, ...trips].map(t => {
     const { start, end, isTrip } = getEventStartEnd(t);

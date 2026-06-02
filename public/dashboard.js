@@ -164,8 +164,9 @@ function renderDashCalendar() {
     visibleDates.push(isoDate(new Date(dashCalYear, dashCalMonth + 1, i)));
   }
 
-  // -- Collect events
-  const todos = Store.getTodos().filter(t => t.status !== 'done');
+  // -- Collect events (expand recurring todos to single-day instances)
+  const rawTodos = Store.getTodos().filter(t => t.status !== 'done');
+  const todos = typeof expandRecurringTodos === 'function' ? expandRecurringTodos(rawTodos, visibleDates) : rawTodos;
   const trips = Store.getTrips();
   let allEvents = [...todos, ...trips].map(t => {
     const { start, end, isTrip } = getEventStartEnd(t);
