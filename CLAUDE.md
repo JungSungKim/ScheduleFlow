@@ -135,12 +135,20 @@ users/{uid}/sf-data/documents → { list: [...], updatedAt }
 
 ### Write-Through Cache (app.js)
 ```js
-// 읽기: Cache 우선 → localStorage fallback
-getData(key)
+// 읽기
+Store.getTodos()  // → Cache.todos (in-memory)
+Store.getTrips()  // → Cache.trips (in-memory)
 
 // 쓰기: Cache 즉시 갱신 → localStorage 즉시 저장 → Firestore debounce(1500ms)
-setData(key, data)
+Store.saveTodos(list)
+Store.saveTrips(list)
 ```
+
+### 리얼타임 크로스-디바이스 동기화 (app.js)
+- `startRealtimeSync(uid)` — 로그인 시 호출, Firestore `onSnapshot` 리스너 등록
+- `stopRealtimeSync()` — 로그아웃 시 호출, 리스너 해제
+- 필터 조건: `fromCache=false && hasPendingWrites=false && data !== Cache`
+  (로컬 쓰기 확인·캐시 데이터 무시, 원격 변경만 반응)
 
 ### Store 확장 API (app.js)
 ```js
@@ -149,7 +157,7 @@ Store.getNotifEnabled() / Store.saveNotifEnabled(bool) // localStorage: sf_notif
 ```
 
 ### 페이지 전환 (app.js)
-- `showPage(pageId)` — 활성 `<section>` 전환 + 네비 하이라이트
+- `navigate(page)` — 활성 `<section>` 전환 + 네비 하이라이트
 - `<section id="page-*">` 패턴으로 모든 페이지 관리
 
 ---
@@ -183,7 +191,7 @@ Store.getNotifEnabled() / Store.saveNotifEnabled(bool) // localStorage: sf_notif
 
 ### 테마
 - CSS 변수 기반 (`--color-primary`, `--bg-main` 등)
-- `document.body.setAttribute('data-theme', 'dark')` 로 전환
+- `document.documentElement.setAttribute('data-theme', theme)` 로 전환
 - localStorage `sf_theme` 에 저장
 
 ### PWA / iOS 로그인 전략 (auth.js)

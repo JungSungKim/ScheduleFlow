@@ -4,10 +4,37 @@
 
 | 항목 | 내용 |
 |------|------|
-| 최종 갱신 | 2026-06-03 |
+| 최종 갱신 | 2026-06-09 |
 | 브랜치 | master |
-| 최신 커밋 | c7990f2 |
+| 최신 커밋 | ba50051 |
 | 미커밋 변경 | 없음 |
+
+---
+
+## 2026-06-09
+
+### 완료 작업
+
+**리얼타임 크로스-디바이스 동기화**
+- `app.js`: `startRealtimeSync(uid)` — Firestore `onSnapshot` 리스너 (todos/trips 각 1개)
+- 필터: `fromCache=false && hasPendingWrites=false && 데이터 변경 시`만 반응 → 자기 기기 쓰기 무시, 무한루프 방지
+- 다른 기기에서 변경 시 Cache + localStorage 즉시 갱신 후 현재 페이지 자동 재렌더링
+- `_showSyncToast()` — "다른 기기에서 변경사항이 동기화됨" 토스트 2.5초 표시
+- `manualRefresh()` — 헤더 ↺ 버튼으로 강제 pull, 완료 시 "새로고침 완료" 토스트
+- `auth.js`: `enterApp` → `startRealtimeSync`, `signOut` → `stopRealtimeSync`
+- SW CACHE_VER `sf-v23` → `sf-v24`, CSS/JS 버전 증가
+
+**CLAUDE.md 오류 수정 (claude-md-improver)**
+- `getData/setData` → `Store.getTodos/getTrips/saveTodos/saveTrips` 정정
+- `showPage()` → `navigate()` 정정
+- `document.body` → `document.documentElement` 정정
+- 리얼타임 동기화 패턴 신규 추가
+
+### 다음 할 일
+
+- [ ] 일정 충돌 감지 및 알림 (Phase 4) — 출장 기간 겹침 / TODO 마감 충돌 감지
+- [ ] 문서 템플릿 UX 개선 — 저장 여부 표시 등 (Phase 3 잔여)
+- [ ] `public/` 임시 파일 정리: `icon.svg.tmp.*`, `index.html.tmp.*`
 
 ---
 
