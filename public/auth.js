@@ -68,6 +68,7 @@ async function handleUserLogin(user) {
 function enterApp(user) {
   hideLoginScreen();
   updateProfileUI(user);
+  startRealtimeSync(user.uid);
   navigate('dashboard');
 }
 
@@ -111,6 +112,7 @@ async function signOut() {
 
   Cache.todos = null;
   Cache.trips = null;
+  stopRealtimeSync();
   await fbAuth.signOut();
   // onAuthStateChanged → showLoginScreen()
 }

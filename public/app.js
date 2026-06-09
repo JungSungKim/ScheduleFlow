@@ -138,6 +138,82 @@ const Store = {
   }
 };
 
+// ── Real-time Cross-Device Sync ──
+const _realtimeUnsubs = [];
+
+function startRealtimeSync(uid) {
+  stopRealtimeSync();
+  const base = fbDb.collection('users').doc(uid).collection('sf-data');
+
+  _realtimeUnsubs.push(
+    base.doc('todos').onSnapshot({ includeMetadataChanges: true }, snap => {
+      if (!snap.exists || snap.metadata.fromCache || snap.metadata.hasPendingWrites) return;
+      const list = snap.data().list ?? [];
+      if (JSON.stringify(Cache.todos) === JSON.stringify(list)) return;
+      Cache.todos = list;
+      localStorage.setItem('sf_todos', JSON.stringify(list));
+      _onRemoteSync();
+    }),
+    base.doc('trips').onSnapshot({ includeMetadataChanges: true }, snap => {
+      if (!snap.exists || snap.metadata.fromCache || snap.metadata.hasPendingWrites) return;
+      const list = snap.data().list ?? [];
+      if (JSON.stringify(Cache.trips) === JSON.stringify(list)) return;
+      Cache.trips = list;
+      localStorage.setItem('sf_trips', JSON.stringify(list));
+      _onRemoteSync();
+    })
+  );
+}
+
+function stopRealtimeSync() {
+  _realtimeUnsubs.forEach(fn => fn());
+  _realtimeUnsubs.length = 0;
+}
+
+function _onRemoteSync() {
+  _showSyncToast('다른 기기에서 변경사항이 동기화됨');
+  if      (currentPage === 'dashboard')  renderDashboard();
+  else if (currentPage === 'todo')       renderTodos();
+  else if (currentPage === 'calendar')   renderCalendar();
+  else if (currentPage === 'trips')      renderTrips();
+  else if (currentPage === 'documents')  renderDocuments();
+}
+
+function _showSyncToast(msg) {
+  let toast = document.getElementById('sync-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'sync-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg || '동기화됨';
+  toast.className = 'sync-toast visible';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => toast.classList.remove('visible'), 2500);
+}
+
+async function manualRefresh() {
+  const user = (typeof fbAuth !== 'undefined') ? fbAuth.currentUser : null;
+  if (!user) return;
+  const btn = document.getElementById('btn-refresh');
+  if (btn) btn.classList.add('spinning');
+  try {
+    await Store.loadFromCloud(user.uid);
+    if (Cache.todos === null) Cache.todos = [];
+    if (Cache.trips === null) Cache.trips = [];
+    if      (currentPage === 'dashboard')  renderDashboard();
+    else if (currentPage === 'todo')       renderTodos();
+    else if (currentPage === 'calendar')   renderCalendar();
+    else if (currentPage === 'trips')      renderTrips();
+    else if (currentPage === 'documents')  renderDocuments();
+    _showSyncToast('새로고침 완료');
+  } catch (e) {
+    _showSyncToast('동기화 실패');
+  } finally {
+    if (btn) setTimeout(() => btn.classList.remove('spinning'), 600);
+  }
+}
+
 // ── UUID ──
 function uuid() {
   return crypto.randomUUID ? crypto.randomUUID() : 'xxxx-xxxx-4xxx-yxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16); });

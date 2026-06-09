@@ -2183,6 +2183,39 @@ p  { line-height: 1.6; color: var(--text-secondary); }
 }
 
 /* ================================================
+   SYNC TOAST & REFRESH BUTTON
+   ================================================ */
+.sync-toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: var(--color-primary);
+  color: #fff;
+  padding: 7px 18px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.25s, transform 0.25s;
+  pointer-events: none;
+  z-index: 9999;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+}
+.sync-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+#btn-refresh.spinning svg {
+  animation: spin 0.7s linear infinite;
+}
+
+/* ================================================
    SEARCH MODAL (Ctrl+K)
    ================================================ */
 .search-overlay {
