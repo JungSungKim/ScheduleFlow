@@ -15,43 +15,100 @@ function initTripFilters() {
   });
 }
 
+function _renderTripCard(t) {
+  const dd = diffDays(t.startDate);
+  let ddText = '';
+  if (t.status === 'completed') ddText = '완료';
+  else if (dd === 0) ddText = 'D-Day';
+  else if (dd > 0) ddText = `D-${dd}`;
+  else ddText = `D+${Math.abs(dd)}`;
+  const statusLabel = {planned:'계획됨','in-progress':'진행중',completed:'완료'}[t.status];
+  return `
+  <div class="trip-card" data-id="${t.id}" onclick="showTripDetail('${t.id}')">
+    <div class="trip-card-header">
+      <span class="trip-card-title">${esc(t.title)}</span>
+      <span class="trip-status-badge ${t.status}">${statusLabel}</span>
+    </div>
+    <div class="trip-card-info">
+      <span>📍 ${esc(t.destination)}</span>
+      <span>📅 ${fmtDate(t.startDate)}${t.startTime ? ' ' + fmtTime(t.startTime) : ''} ~ ${fmtDate(t.endDate)}${t.endTime ? ' ' + fmtTime(t.endTime) : ''}</span>
+      <span class="dday-badge ${dd===0?'today':''}">  ${ddText}</span>
+    </div>
+    <div class="trip-card-actions">
+      <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showTripForm('${t.id}')">✏️ 수정</button>
+      <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();addTripTodo('${t.id}')">✚ 할 일 추가</button>
+      <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();navigate('documents');setTimeout(()=>selectTripForDoc('${t.id}'),100)">📄 문서</button>
+      <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();cycleTripStatus('${t.id}')">${t.status==='planned'?'▶ 진행':t.status==='in-progress'?'✓ 완료':'↩ 되돌리기'}</button>
+      <button class="btn btn-sm btn-outline text-danger" onclick="event.stopPropagation();deleteTrip('${t.id}')">🗑️ 삭제</button>
+    </div>
+  </div>`;
+}
+
+function _renderCompletedTripsByMonth(completedTrips) {
+  const prevYM = (() => {
+    const d = new Date(); d.setMonth(d.getMonth() - 1);
+    return d.toISOString().slice(0, 7);
+  })();
+
+  const groups = {};
+  completedTrips.forEach(t => {
+    const key = (t.endDate || t.startDate || t.createdAt || '').slice(0, 7) || 'nodate';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(t);
+  });
+
+  return Object.keys(groups)
+    .sort((a, b) => b.localeCompare(a))
+    .map(key => {
+      const items = groups[key];
+      const label = key === 'nodate' ? '날짜 없음' : fmtYearMonth(key);
+      const isOpen = key >= prevYM;
+      return `
+      <details class="month-group" ${isOpen ? 'open' : ''}>
+        <summary class="month-group-header">
+          <span class="month-group-chevron">▶</span>
+          <span class="month-group-title">${label} 완료</span>
+          <span class="month-group-count">${items.length}건</span>
+        </summary>
+        <div class="month-group-body">${items.map(_renderTripCard).join('')}</div>
+      </details>`;
+    }).join('');
+}
+
 function renderTrips() {
   let trips = Store.getTrips();
-  if (tripFilter !== 'all') trips = trips.filter(t => t.status === tripFilter);
   const list = document.getElementById('trips-list');
-  if (!trips.length) {
-    list.innerHTML = '<p class="empty-state">등록된 출장이 없습니다 ✈️</p>';
+
+  if (tripFilter === 'completed') {
+    // 완료 필터: 월별 그룹만
+    const completed = trips.filter(t => t.status === 'completed');
+    list.innerHTML = completed.length
+      ? _renderCompletedTripsByMonth(completed)
+      : '<p class="empty-state">완료된 출장이 없습니다 ✈️</p>';
     return;
   }
-  list.innerHTML = trips.map(t => {
-    const dd = diffDays(t.startDate);
-    let ddText = '';
-    if (t.status === 'completed') ddText = '완료';
-    else if (dd === 0) ddText = 'D-Day';
-    else if (dd > 0) ddText = `D-${dd}`;
-    else ddText = `D+${Math.abs(dd)}`;
 
-    const statusLabel = {planned:'계획됨','in-progress':'진행중',completed:'완료'}[t.status];
-    return `
-    <div class="trip-card" data-id="${t.id}" onclick="showTripDetail('${t.id}')">
-      <div class="trip-card-header">
-        <span class="trip-card-title">${esc(t.title)}</span>
-        <span class="trip-status-badge ${t.status}">${statusLabel}</span>
-      </div>
-      <div class="trip-card-info">
-        <span>📍 ${esc(t.destination)}</span>
-        <span>📅 ${fmtDate(t.startDate)}${t.startTime ? ' ' + fmtTime(t.startTime) : ''} ~ ${fmtDate(t.endDate)}${t.endTime ? ' ' + fmtTime(t.endTime) : ''}</span>
-        <span class="dday-badge ${dd===0?'today':''}">  ${ddText}</span>
-      </div>
-      <div class="trip-card-actions">
-        <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showTripForm('${t.id}')">✏️ 수정</button>
-        <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();addTripTodo('${t.id}')">✚ 할 일 추가</button>
-        <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();navigate('documents');setTimeout(()=>selectTripForDoc('${t.id}'),100)">📄 문서</button>
-        <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();cycleTripStatus('${t.id}')">${ t.status==='planned'?'▶ 진행':t.status==='in-progress'?'✓ 완료':'↩ 되돌리기'}</button>
-        <button class="btn btn-sm btn-outline text-danger" onclick="event.stopPropagation();deleteTrip('${t.id}')">🗑️ 삭제</button>
-      </div>
-    </div>`;
-  }).join('');
+  if (tripFilter !== 'all') {
+    // planned / in-progress 필터: 기존 방식
+    const filtered = trips.filter(t => t.status === tripFilter);
+    list.innerHTML = filtered.length
+      ? filtered.map(_renderTripCard).join('')
+      : '<p class="empty-state">등록된 출장이 없습니다 ✈️</p>';
+    return;
+  }
+
+  // '전체': 진행중/계획됨 먼저, 완료는 월별 그룹
+  const active    = trips.filter(t => t.status !== 'completed');
+  const completed = trips.filter(t => t.status === 'completed');
+
+  let html = active.map(_renderTripCard).join('');
+
+  if (completed.length) {
+    if (html) html += '<div class="done-section-divider"><span>완료된 출장</span></div>';
+    html += _renderCompletedTripsByMonth(completed);
+  }
+
+  list.innerHTML = html || '<p class="empty-state">등록된 출장이 없습니다 ✈️</p>';
 }
 
 function cycleTripStatus(id) {

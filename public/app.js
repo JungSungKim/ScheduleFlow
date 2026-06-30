@@ -221,6 +221,11 @@ function uuid() {
 
 // ── Date Helpers ──
 function fmtDate(d)  { return d ? new Date(d).toLocaleDateString('ko-KR') : ''; }
+function fmtYearMonth(ym) {
+  if (!ym || ym.length < 7) return ym;
+  const [y, m] = ym.split('-');
+  return `${y}년 ${String(Number(m)).padStart(2,'0')}월`;
+}
 function isoDate(d) {
   if (!d) return '';
   if (d instanceof Date) return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;

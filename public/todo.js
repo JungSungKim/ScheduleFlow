@@ -103,82 +103,125 @@ function initTodoFilters() {
   });
 }
 
+// ── Render Helpers ──
+function _sortTodoList(todos) {
+  const copy = [...todos];
+  if (todoSort === 'due') {
+    return copy.sort((a, b) => (a.dueDate || '9').localeCompare(b.dueDate || '9'));
+  } else if (todoSort === 'priority') {
+    const w = { high: 0, mid: 1, low: 2 };
+    return copy.sort((a, b) => (w[a.priority] ?? 1) - (w[b.priority] ?? 1));
+  } else {
+    if (copy.some(t => t.sortOrder !== undefined)) {
+      return copy.sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999));
+    }
+    return copy.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  }
+}
+
+function _renderTodoItem(t) {
+  const tagBadges = (t.tags || []).map(tag => {
+    const col = tagColor(tag);
+    return `<span class="tag-badge" style="background:${col.bg};color:${col.text}">${esc(tag)}</span>`;
+  }).join('');
+  const repeatIcon = t.repeat && t.repeat !== 'none' ? ' <span title="반복 일정">🔁</span>' : '';
+  let tripBadge = '';
+  if (t.tripId) {
+    const linkedTrip = Store.getTrips().find(x => x.id === t.tripId);
+    if (linkedTrip) {
+      tripBadge = `<span class="trip-link-badge" onclick="event.stopPropagation();showTripDetail('${linkedTrip.id}')" title="연결된 출장 보기">✈️ ${esc(linkedTrip.title)}</span>`;
+    }
+  }
+  return `
+  <div class="todo-item ${t.status === 'done' ? 'done' : ''}" data-id="${t.id}"
+       draggable="true"
+       ondragstart="onTodoDragStart(event,'${t.id}')"
+       ondragover="onTodoDragOver(event)"
+       ondrop="onTodoDrop(event,'${t.id}')"
+       ondragend="onTodoDragEnd(event)"
+       onclick="showTodoDetail('${t.id}')">
+    <div class="todo-drag-handle" title="드래그하여 순서 변경" onclick="event.stopPropagation()">⠿</div>
+    <div class="todo-checkbox ${t.status === 'done' ? 'checked' : ''}"
+         onclick="event.stopPropagation();cycleTodoStatus('${t.id}')">${t.status === 'done' ? '✓' : t.status === 'in-progress' ? '◐' : ''}</div>
+    <div class="todo-info">
+      <div class="todo-title">${t.type === 'personal' ? '👤 ' : t.type === 'trip' ? '✈️ ' : ''}${esc(t.title)}${repeatIcon}</div>
+      <div class="todo-meta">
+        ${t.startDate && t.startDate !== t.dueDate ? `<span>📅 ${fmtDate(t.startDate)} ~ ${fmtDate(t.dueDate)}</span>` : t.dueDate ? `<span>📅 ${fmtDate(t.dueDate)}${t.dueTime ? ' ' + fmtTime(t.dueTime) : ''}</span>` : ''}
+        <span class="todo-priority ${t.priority}">${{ high: '높음', mid: '보통', low: '낮음' }[t.priority] || '보통'}</span>
+        ${tagBadges}
+        ${tripBadge}
+      </div>
+    </div>
+    <div class="todo-actions">
+      <button class="btn-icon" onclick="event.stopPropagation();showTodoForm('${t.id}')" title="수정">✏️</button>
+      <button class="btn-icon" onclick="event.stopPropagation();deleteTodo('${t.id}')" title="삭제">🗑️</button>
+    </div>
+  </div>`;
+}
+
+function _renderDoneByMonth(doneTodos) {
+  const nowYM = new Date().toISOString().slice(0, 7);
+  const prevYM = (() => {
+    const d = new Date(); d.setMonth(d.getMonth() - 1);
+    return d.toISOString().slice(0, 7);
+  })();
+
+  const groups = {};
+  doneTodos.forEach(t => {
+    const key = (t.dueDate || t.createdAt || '').slice(0, 7) || 'nodate';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(t);
+  });
+
+  return Object.keys(groups)
+    .sort((a, b) => b.localeCompare(a))
+    .map(key => {
+      const items = groups[key];
+      const label = key === 'nodate' ? '날짜 없음' : fmtYearMonth(key);
+      const isOpen = key >= prevYM;
+      return `
+      <details class="month-group" ${isOpen ? 'open' : ''}>
+        <summary class="month-group-header">
+          <span class="month-group-chevron">▶</span>
+          <span class="month-group-title">${label} 완료</span>
+          <span class="month-group-count">${items.length}개</span>
+        </summary>
+        <div class="month-group-body">${items.map(_renderTodoItem).join('')}</div>
+      </details>`;
+    }).join('');
+}
+
 // ── Render ──
 function renderTodos() {
   let todos = Store.getTodos();
 
-  // filter by status
-  if (todoFilter !== 'all') todos = todos.filter(t => t.status === todoFilter);
-  // filter by tag
+  // 태그/출장 필터
   if (todoTagFilter) todos = todos.filter(t => (t.tags || []).includes(todoTagFilter));
-  // filter by trip
   if (todoTripFilter) todos = todos.filter(t => t.tripId === todoTripFilter);
 
-  // sort
-  if (todoSort === 'due') {
-    todos.sort((a, b) => (a.dueDate || '9').localeCompare(b.dueDate || '9'));
-  } else if (todoSort === 'priority') {
-    const w = { high: 0, mid: 1, low: 2 };
-    todos.sort((a, b) => (w[a.priority] ?? 1) - (w[b.priority] ?? 1));
-  } else {
-    if (todos.some(t => t.sortOrder !== undefined)) {
-      todos.sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999));
-    } else {
-      todos.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    }
-  }
-
   const list = document.getElementById('todo-list');
-  if (!todos.length) {
-    list.innerHTML = '<p class="empty-state">할 일을 추가해 보세요! ✏️</p>';
-    updateTodoBadge();
-    renderTagFilters();
-    return;
-  }
 
-  list.innerHTML = todos.map(t => {
-    const tagBadges = (t.tags || []).map(tag => {
-      const col = tagColor(tag);
-      return `<span class="tag-badge" style="background:${col.bg};color:${col.text}">${esc(tag)}</span>`;
-    }).join('');
-    const repeatIcon = t.repeat && t.repeat !== 'none' ? ' <span title="반복 일정">🔁</span>' : '';
+  if (todoFilter === 'todo' || todoFilter === 'in-progress') {
+    // 특정 상태 필터: 기존 방식 그대로
+    const filtered = _sortTodoList(todos.filter(t => t.status === todoFilter));
+    list.innerHTML = filtered.length
+      ? filtered.map(_renderTodoItem).join('')
+      : '<p class="empty-state">할 일을 추가해 보세요! ✏️</p>';
+  } else {
+    // 'all' 또는 'done': 완료 항목을 월별 그룹으로
+    const active = todoFilter === 'done' ? [] : _sortTodoList(todos.filter(t => t.status !== 'done'));
+    const done   = todos.filter(t => t.status === 'done');
 
-    // 연결된 출장 배지
-    let tripBadge = '';
-    if (t.tripId) {
-      const linkedTrip = Store.getTrips().find(x => x.id === t.tripId);
-      if (linkedTrip) {
-        tripBadge = `<span class="trip-link-badge" onclick="event.stopPropagation();showTripDetail('${linkedTrip.id}')" title="연결된 출장 보기">✈️ ${esc(linkedTrip.title)}</span>`;
-      }
+    let html = active.map(_renderTodoItem).join('');
+
+    if (done.length) {
+      if (html) html += '<div class="done-section-divider"><span>완료된 항목</span></div>';
+      html += _renderDoneByMonth(done);
     }
 
-    return `
-    <div class="todo-item ${t.status === 'done' ? 'done' : ''}" data-id="${t.id}"
-         draggable="true"
-         ondragstart="onTodoDragStart(event,'${t.id}')"
-         ondragover="onTodoDragOver(event)"
-         ondrop="onTodoDrop(event,'${t.id}')"
-         ondragend="onTodoDragEnd(event)"
-         onclick="showTodoDetail('${t.id}')">
-      <div class="todo-drag-handle" title="드래그하여 순서 변경" onclick="event.stopPropagation()">⠿</div>
-      <div class="todo-checkbox ${t.status === 'done' ? 'checked' : ''}"
-           onclick="event.stopPropagation();cycleTodoStatus('${t.id}')">${t.status === 'done' ? '✓' : t.status === 'in-progress' ? '◐' : ''}</div>
-      <div class="todo-info">
-        <div class="todo-title">${t.type === 'personal' ? '👤 ' : t.type === 'trip' ? '✈️ ' : ''}${esc(t.title)}${repeatIcon}</div>
-        <div class="todo-meta">
-          ${t.startDate && t.startDate !== t.dueDate ? `<span>📅 ${fmtDate(t.startDate)} ~ ${fmtDate(t.dueDate)}</span>` : t.dueDate ? `<span>📅 ${fmtDate(t.dueDate)}${t.dueTime ? ' ' + fmtTime(t.dueTime) : ''}</span>` : ''}
-          <span class="todo-priority ${t.priority}">${{ high: '높음', mid: '보통', low: '낮음' }[t.priority] || '보통'}</span>
-          ${tagBadges}
-          ${tripBadge}
-        </div>
-      </div>
-      <div class="todo-actions">
-        <button class="btn-icon" onclick="event.stopPropagation();showTodoForm('${t.id}')" title="수정">✏️</button>
-        <button class="btn-icon" onclick="event.stopPropagation();deleteTodo('${t.id}')" title="삭제">🗑️</button>
-      </div>
-    </div>
-    `;
-  }).join('');
+    list.innerHTML = html || '<p class="empty-state">할 일을 추가해 보세요! ✏️</p>';
+  }
+
   updateTodoBadge();
   renderTagFilters();
   renderTripFilter();

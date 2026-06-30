@@ -2404,3 +2404,69 @@ p  { line-height: 1.6; color: var(--text-secondary); }
   margin-top: 2px;
 }
 
+
+/* ── Monthly Group (완료 항목 월별 접기) ── */
+.done-section-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0 8px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.done-section-divider::before,
+.done-section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+
+.month-group {
+  margin-bottom: 6px;
+}
+.month-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  border: 1px solid var(--border-color);
+  transition: background 0.15s;
+}
+.month-group-header::-webkit-details-marker { display: none; }
+.month-group-header:hover { background: var(--bg-hover); }
+
+.month-group-chevron {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+details[open] .month-group-chevron {
+  transform: rotate(90deg);
+}
+.month-group-title {
+  flex: 1;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.month-group-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 1px 8px;
+}
+.month-group-body {
+  padding: 4px 0 4px 0;
+}
