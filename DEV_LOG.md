@@ -4,10 +4,38 @@
 
 | 항목 | 내용 |
 |------|------|
-| 최종 갱신 | 2026-06-09 |
+| 최종 갱신 | 2026-06-30 |
 | 브랜치 | master |
-| 최신 커밋 | ba50051 |
+| 최신 커밋 | 18801f1 |
 | 미커밋 변경 | 없음 |
+
+---
+
+## 2026-06-30
+
+### 완료 작업
+
+**완료 항목 월별 그룹 접기 (TODO + 출장)**
+- `todo.js`: `renderTodos()` 리팩토링 — `_sortTodoList`, `_renderTodoItem`, `_renderDoneByMonth` 분리
+- 필터 'all'/'done': 미완료·진행중 항목 상단 표시 → "완료된 항목" 구분선 → 월별 `<details>` 그룹
+- 필터 'todo'/'in-progress': 기존 방식 그대로 유지
+- `trips.js`: `_renderTripCard`, `_renderCompletedTripsByMonth` 분리, `renderTrips()` 동일 패턴 적용
+- `app.js`: `fmtYearMonth(ym)` 헬퍼 추가 (`'2026-06'` → `'2026년 06월'`)
+- `index.css`: `.done-section-divider`, `.month-group`, `.month-group-header` 등 스타일 추가
+- SW CACHE_VER `sf-v24` → `sf-v25`, 버전 번호 일괄 증가
+- Firebase Hosting 배포 완료
+
+### 의사결정
+
+- 최근 2달(현재달 + 전달)은 기본 펼침, 그 이전은 접힘 — 가장 자주 보는 범위는 열어두되 오래된 것은 정리
+- 완료 TODO 기준 날짜: `dueDate` 우선, 없으면 `createdAt`
+- 완료 출장 기준 날짜: `endDate` 우선, 없으면 `startDate` → `createdAt`
+
+### 다음 할 일
+
+- [ ] 일정 충돌 감지 및 알림 (Phase 4) — 출장 기간 겹침 / TODO 마감 충돌 감지
+- [ ] 문서 템플릿 UX 개선 — 저장 여부 표시 등 (Phase 3 잔여)
+- [ ] `public/` 임시 파일 정리: `icon.svg.tmp.*`, `index.html.tmp.*`
 
 ---
 
