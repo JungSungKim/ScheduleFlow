@@ -3,6 +3,7 @@
    ================================================ */
 
 let tripFilter = 'all';
+let tripSort = 'created';
 
 function initTripFilters() {
   document.querySelectorAll('#page-trips .filter-btn').forEach(btn => {
@@ -13,6 +14,8 @@ function initTripFilters() {
       renderTrips();
     });
   });
+  const sortSel = document.getElementById('trip-sort-select');
+  if (sortSel) sortSel.addEventListener('change', () => { tripSort = sortSel.value; renderTrips(); });
 }
 
 function _renderTripCard(t) {
@@ -23,25 +26,63 @@ function _renderTripCard(t) {
   else if (dd > 0) ddText = `D-${dd}`;
   else ddText = `D+${Math.abs(dd)}`;
   const statusLabel = {planned:'계획됨','in-progress':'진행중',completed:'완료'}[t.status];
+  const preIcon = t.preReport ? '✅' : '⬜';
+  const postIcon = t.postReport ? '✅' : '⬜';
   return `
   <div class="trip-card" data-id="${t.id}" onclick="showTripDetail('${t.id}')">
     <div class="trip-card-header">
       <span class="trip-card-title">${esc(t.title)}</span>
-      <span class="trip-status-badge ${t.status}">${statusLabel}</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        ${t.project ? `<span class="project-badge">${esc(t.project)}</span>` : ''}
+        <span class="trip-status-badge ${t.status}">${statusLabel}</span>
+      </div>
     </div>
     <div class="trip-card-info">
       <span>📍 ${esc(t.destination)}</span>
       <span>📅 ${fmtDate(t.startDate)}${t.startTime ? ' ' + fmtTime(t.startTime) : ''} ~ ${fmtDate(t.endDate)}${t.endTime ? ' ' + fmtTime(t.endTime) : ''}</span>
       <span class="dday-badge ${dd===0?'today':''}">  ${ddText}</span>
     </div>
+    <div class="trip-doc-status">
+      <button class="doc-status-btn ${t.preReport ? 'done' : ''}" onclick="event.stopPropagation();openTripDoc('${t.id}','pre')" title="출장사전신청서">
+        📝 신청서 ${preIcon}
+      </button>
+      <button class="doc-status-btn ${t.postReport ? 'done' : ''}" onclick="event.stopPropagation();openTripDoc('${t.id}','post')" title="외근출장보고서">
+        📋 보고서 ${postIcon}
+      </button>
+    </div>
     <div class="trip-card-actions">
       <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showTripForm('${t.id}')">✏️ 수정</button>
       <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();addTripTodo('${t.id}')">✚ 할 일 추가</button>
-      <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();navigate('documents');setTimeout(()=>selectTripForDoc('${t.id}'),100)">📄 문서</button>
       <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();cycleTripStatus('${t.id}')">${t.status==='planned'?'▶ 진행':t.status==='in-progress'?'✓ 완료':'↩ 되돌리기'}</button>
       <button class="btn btn-sm btn-outline text-danger" onclick="event.stopPropagation();deleteTrip('${t.id}')">🗑️ 삭제</button>
     </div>
   </div>`;
+}
+
+function _renderByProject(trips) {
+  const withProject = trips.filter(t => t.project && t.project.trim());
+  const noProject   = trips.filter(t => !t.project || !t.project.trim());
+  let html = '';
+  if (withProject.length) {
+    html += `<div class="project-group-header"><span>🏷️ 사업 출장</span><span class="month-group-count">${withProject.length}건</span></div>`;
+    html += withProject.map(_renderTripCard).join('');
+  }
+  if (noProject.length) {
+    html += `<div class="project-group-header"><span>📋 일반 출장</span><span class="month-group-count">${noProject.length}건</span></div>`;
+    html += noProject.map(_renderTripCard).join('');
+  }
+  return html || '';
+}
+
+function openTripDoc(tripId, type) {
+  navigate('documents');
+  setTimeout(() => {
+    selectTripForDoc(tripId);
+    setTimeout(() => {
+      if (type === 'pre') showPreReport(tripId);
+      else showPostReport(tripId);
+    }, 50);
+  }, 100);
 }
 
 function _renderCompletedTripsByMonth(completedTrips) {
@@ -76,36 +117,35 @@ function _renderCompletedTripsByMonth(completedTrips) {
 }
 
 function renderTrips() {
-  let trips = Store.getTrips();
+  const trips = Store.getTrips();
   const list = document.getElementById('trips-list');
+  const byProject = tripSort === 'project';
 
   if (tripFilter === 'completed') {
-    // 완료 필터: 월별 그룹만
     const completed = trips.filter(t => t.status === 'completed');
     list.innerHTML = completed.length
-      ? _renderCompletedTripsByMonth(completed)
+      ? (byProject ? _renderByProject(completed) : _renderCompletedTripsByMonth(completed))
       : '<p class="empty-state">완료된 출장이 없습니다 ✈️</p>';
     return;
   }
 
   if (tripFilter !== 'all') {
-    // planned / in-progress 필터: 기존 방식
     const filtered = trips.filter(t => t.status === tripFilter);
     list.innerHTML = filtered.length
-      ? filtered.map(_renderTripCard).join('')
+      ? (byProject ? _renderByProject(filtered) : filtered.map(_renderTripCard).join(''))
       : '<p class="empty-state">등록된 출장이 없습니다 ✈️</p>';
     return;
   }
 
-  // '전체': 진행중/계획됨 먼저, 완료는 월별 그룹
+  // '전체': 진행중/계획됨 먼저, 완료는 뒤
   const active    = trips.filter(t => t.status !== 'completed');
   const completed = trips.filter(t => t.status === 'completed');
 
-  let html = active.map(_renderTripCard).join('');
+  let html = byProject ? _renderByProject(active) : active.map(_renderTripCard).join('');
 
   if (completed.length) {
     if (html) html += '<div class="done-section-divider"><span>완료된 출장</span></div>';
-    html += _renderCompletedTripsByMonth(completed);
+    html += byProject ? _renderByProject(completed) : _renderCompletedTripsByMonth(completed);
   }
 
   list.innerHTML = html || '<p class="empty-state">등록된 출장이 없습니다 ✈️</p>';
@@ -295,10 +335,20 @@ function showTripDetail(id) {
         <div class="detail-section-title">📋 연결된 할 일 (${linkedTodos.length}건)</div>
         ${todoListHtml}
       </div>
+      <div class="detail-section">
+        <div class="detail-section-title">📄 문서 상태</div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="doc-status-btn ${t.preReport ? 'done' : ''}" style="flex:1" onclick="closeModal();openTripDoc('${id}','pre')">
+            📝 신청서 ${t.preReport ? '✅ 작성됨' : '⬜ 미작성'}
+          </button>
+          <button class="doc-status-btn ${t.postReport ? 'done' : ''}" style="flex:1" onclick="closeModal();openTripDoc('${id}','post')">
+            📋 보고서 ${t.postReport ? '✅ 작성됨' : '⬜ 미작성'}
+          </button>
+        </div>
+      </div>
       <div class="detail-action-bar">
         <button class="btn btn-outline" onclick="cycleTripStatus('${id}')">  ${statusNextLabel}</button>
         <button class="btn btn-outline" onclick="addTripTodo('${id}')">✚ 할 일 추가</button>
-        <button class="btn btn-outline" onclick="closeModal();navigate('documents');setTimeout(()=>selectTripForDoc('${id}'),100)">📄 문서</button>
         <button class="btn btn-primary" onclick="closeModal();showTripForm('${id}')">✏️ 수정하기</button>
       </div>
     </div>

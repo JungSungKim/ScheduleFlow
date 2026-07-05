@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="index.css?v=19">
+  <link rel="stylesheet" href="index.css?v=20">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1C1C1E">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -49,7 +49,7 @@
         <button class="rail-btn" data-page="trips" id="nav-trips" title="출장">
           <i data-lucide="plane"></i>
         </button>
-        <button class="rail-btn" data-page="documents" id="nav-documents" title="문서">
+        <button class="rail-btn" data-page="documents" id="nav-documents" title="문서" style="display:none">
           <i data-lucide="file-text"></i>
         </button>
       </nav>
@@ -76,7 +76,7 @@
         </button>
         <button class="panel-item" data-page="calendar">캘린더</button>
         <button class="panel-item" data-page="trips">출장</button>
-        <button class="panel-item" data-page="documents">문서</button>
+        <button class="panel-item" data-page="documents" style="display:none">문서</button>
       </nav>
       <div class="panel-footer">
         <div class="sidebar-profile" id="sidebar-profile" onclick="toggleSettingsPanel()">
@@ -305,6 +305,12 @@
             <button class="filter-btn" data-filter="in-progress">진행중</button>
             <button class="filter-btn" data-filter="completed">완료</button>
           </div>
+          <div class="todo-sort">
+            <select id="trip-sort-select" class="sort-select">
+              <option value="created">등록순</option>
+              <option value="project">사업명 유무</option>
+            </select>
+          </div>
         </div>
         <div id="trips-list" class="trips-list"></div>
       </section>
@@ -353,7 +359,7 @@
   <script src="auth.js?v=7"></script>
   <script src="todo.js?v=13"></script>
   <script src="calendar.js?v=10"></script>
-  <script src="trips.js?v=8"></script>
+  <script src="trips.js?v=9"></script>
   <script src="documents.js?v=5"></script>
   <script src="dashboard.js?v=14"></script>
   <script>if (typeof lucide !== 'undefined') lucide.createIcons();</script>

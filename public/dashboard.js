@@ -123,10 +123,11 @@ function renderDashDocs() {
     return;
   }
   list.innerHTML = pending.slice(0, 3).map(t => `
-    <div style="padding:6px 0;border-bottom:1px solid var(--border-color);font-size:0.85rem">
-      <span style="font-weight:500">${esc(t.title)}</span>
-      <span style="color:var(--text-muted);margin-left:8px">
-        ${!t.preReport ? '📝 사전신청서' : ''} ${!t.postReport ? '📋 보고서' : ''}
+    <div style="padding:6px 0;border-bottom:1px solid var(--border-color);font-size:0.85rem;display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <span style="font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.title)}</span>
+      <span style="display:flex;gap:4px;flex-shrink:0">
+        ${!t.preReport ? `<button class="doc-status-btn" style="padding:2px 6px;font-size:0.72rem" onclick="openTripDoc('${t.id}','pre')">📝 신청서</button>` : ''}
+        ${!t.postReport ? `<button class="doc-status-btn" style="padding:2px 6px;font-size:0.72rem" onclick="openTripDoc('${t.id}','post')">📋 보고서</button>` : ''}
       </span>
     </div>
   `).join('');
