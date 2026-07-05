@@ -249,8 +249,12 @@ function updateProfileUI(user) {
 
 // ── Settings Panel ──
 function toggleSettingsPanel() {
-  document.getElementById('settings-panel').classList.toggle('open');
+  const panel = document.getElementById('settings-panel');
+  panel.classList.toggle('open');
   document.getElementById('settings-backdrop').classList.toggle('open');
+  if (panel.classList.contains('open') && typeof renderCalSyncSection === 'function') {
+    renderCalSyncSection();
+  }
 }
 
 function closeSettingsPanel() {

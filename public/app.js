@@ -86,16 +86,24 @@ const Store = {
   getNotifEnabled() { return localStorage.getItem('sf_notif') === '1'; },
   saveNotifEnabled(v) { localStorage.setItem('sf_notif', v ? '1' : '0'); },
 
+  // ── 캘린더 연동 (로컬 전용) ──
+  getCalToken:     () => localStorage.getItem('sf_cal_token') || null,
+  saveCalToken:    (t) => { if (t) localStorage.setItem('sf_cal_token', t); else localStorage.removeItem('sf_cal_token'); },
+  getCalWorkerUrl: () => localStorage.getItem('sf_cal_worker') || '',
+  saveCalWorkerUrl:(u) => { if (u) localStorage.setItem('sf_cal_worker', u); else localStorage.removeItem('sf_cal_worker'); },
+
   // ── Writes: Cache + localStorage + async Firestore ──
   saveTodos(list) {
     Cache.todos = list;
     localStorage.setItem('sf_todos', JSON.stringify(list));
     _scheduleSyncToCloud('todos', list);
+    scheduleCalSync();
   },
   saveTrips(list) {
     Cache.trips = list;
     localStorage.setItem('sf_trips', JSON.stringify(list));
     _scheduleSyncToCloud('trips', list);
+    scheduleCalSync();
   },
 
   // ── Cloud operations (called from auth.js only) ──
@@ -127,14 +135,16 @@ const Store = {
 
   async deleteAllUserData(uid) {
     const base = fbDb.collection('users').doc(uid).collection('sf-data');
-    await Promise.all([
-      base.doc('todos').delete(),
-      base.doc('trips').delete()
-    ]);
+    const calToken = localStorage.getItem('sf_cal_token');
+    const ops = [base.doc('todos').delete(), base.doc('trips').delete()];
+    if (calToken) ops.push(fbDb.collection('publicCalendars').doc(calToken).delete().catch(() => {}));
+    await Promise.all(ops);
     Cache.todos = [];
     Cache.trips = [];
     localStorage.removeItem('sf_todos');
     localStorage.removeItem('sf_trips');
+    localStorage.removeItem('sf_cal_token');
+    localStorage.removeItem('sf_cal_worker');
   }
 };
 
@@ -682,4 +692,162 @@ function checkUpcomingReminders() {
         });
       }
     });
+}
+
+// ── 캘린더 연동 (webcal / Cloudflare Worker) ──
+
+function generateICS(trips, todos) {
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//ScheduleFlow//KO',
+    'CALSCALE:GREGORIAN',
+    'X-WR-CALNAME:ScheduleFlow',
+    'X-WR-CALDESC:ScheduleFlow 출장 및 할 일',
+  ];
+
+  (trips || []).forEach(trip => {
+    if (!trip.startDate) return;
+    const endDate = trip.endDate || trip.startDate;
+    const endExcl = new Date(endDate + 'T00:00:00');
+    endExcl.setDate(endExcl.getDate() + 1);
+    const endStr = endExcl.toISOString().slice(0, 10).replace(/-/g, '');
+    const desc = [
+      trip.destination ? `목적지: ${trip.destination}` : '',
+      trip.purpose     ? `목적: ${trip.purpose}`       : '',
+      trip.project     ? `사업명: ${trip.project}`     : '',
+    ].filter(Boolean).join('\\n');
+    lines.push('BEGIN:VEVENT');
+    lines.push(`UID:trip-${trip.id}@scheduleflow`);
+    lines.push(`SUMMARY:✈️ ${trip.title}`);
+    lines.push(`DTSTART;VALUE=DATE:${trip.startDate.replace(/-/g, '')}`);
+    lines.push(`DTEND;VALUE=DATE:${endStr}`);
+    if (trip.destination) lines.push(`LOCATION:${trip.destination}`);
+    if (desc)             lines.push(`DESCRIPTION:${desc}`);
+    lines.push('END:VEVENT');
+  });
+
+  (todos || []).filter(t => t.dueDate && t.status !== 'done').forEach(todo => {
+    const endExcl = new Date(todo.dueDate + 'T00:00:00');
+    endExcl.setDate(endExcl.getDate() + 1);
+    const endStr = endExcl.toISOString().slice(0, 10).replace(/-/g, '');
+    lines.push('BEGIN:VEVENT');
+    lines.push(`UID:todo-${todo.id}@scheduleflow`);
+    lines.push(`SUMMARY:📋 ${todo.title}`);
+    lines.push(`DTSTART;VALUE=DATE:${todo.dueDate.replace(/-/g, '')}`);
+    lines.push(`DTEND;VALUE=DATE:${endStr}`);
+    lines.push('END:VEVENT');
+  });
+
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+
+let _calSyncTimer = null;
+function scheduleCalSync() {
+  if (!Store.getCalToken()) return;
+  clearTimeout(_calSyncTimer);
+  _calSyncTimer = setTimeout(_pushCalendar, 3000);
+}
+
+async function _pushCalendar() {
+  const token = Store.getCalToken();
+  if (!token) return;
+  const user = (typeof fbAuth !== 'undefined') ? fbAuth.currentUser : null;
+  if (!user) return;
+  try {
+    await fbDb.collection('publicCalendars').doc(token).set({
+      content: generateICS(Store.getTrips(), Store.getTodos()),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch(e) {
+    console.warn('[Cal sync failed]', e.message);
+  }
+}
+
+async function enableCalSync() {
+  const token = uuid();
+  Store.saveCalToken(token);
+  await _pushCalendar();
+  renderCalSyncSection();
+  _showSyncToast('캘린더 연동이 활성화되었습니다');
+}
+
+async function disableCalSync() {
+  const token = Store.getCalToken();
+  if (token) {
+    try { await fbDb.collection('publicCalendars').doc(token).delete(); } catch(e) {}
+  }
+  Store.saveCalToken(null);
+  renderCalSyncSection();
+  _showSyncToast('캘린더 연동이 해제되었습니다');
+}
+
+function saveCalWorkerUrl() {
+  const val = (document.getElementById('cal-worker-url-input')?.value || '').trim().replace(/\/$/, '');
+  if (!val) return;
+  Store.saveCalWorkerUrl(val);
+  renderCalSyncSection();
+}
+
+function _editCalWorkerUrl() {
+  Store.saveCalWorkerUrl('');
+  renderCalSyncSection();
+}
+
+function copyCalUrl(url) {
+  navigator.clipboard.writeText(url).then(() => _showSyncToast('URL이 복사되었습니다'));
+}
+
+function renderCalSyncSection() {
+  const el = document.getElementById('cal-sync-section');
+  if (!el) return;
+  const token     = Store.getCalToken();
+  const workerUrl = Store.getCalWorkerUrl();
+
+  if (!workerUrl) {
+    el.innerHTML = `
+      <div style="font-size:0.88rem;font-weight:500;margin-bottom:8px">📅 캘린더 연동 (webcal)</div>
+      <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:8px">
+        Cloudflare Worker를 배포한 후 URL을 입력하세요.<br>
+        설정 방법: <code>cloudflare-worker/</code> 폴더 참고
+      </div>
+      <input id="cal-worker-url-input" class="form-input" style="font-size:0.82rem;margin-bottom:8px"
+        placeholder="https://scheduleflow-cal.username.workers.dev">
+      <button class="btn btn-outline btn-sm" style="width:100%" onclick="saveCalWorkerUrl()">Worker URL 저장</button>`;
+    return;
+  }
+
+  if (!token) {
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:0.88rem;font-weight:500">📅 캘린더 연동 (webcal)</div>
+        <button class="btn btn-outline btn-sm" onclick="_editCalWorkerUrl()" style="font-size:0.72rem">URL 변경</button>
+      </div>
+      <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:8px">
+        Worker: <span style="color:var(--text-primary)">${esc(workerUrl)}</span>
+      </div>
+      <button class="btn btn-primary btn-sm" style="width:100%" onclick="enableCalSync()">연동 시작</button>`;
+    return;
+  }
+
+  const base = workerUrl.replace(/^https?:\/\//, '');
+  const webcalUrl = `webcal://${base}/${token}.ics`;
+  const httpsUrl  = `${workerUrl}/${token}.ics`;
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-size:0.88rem;font-weight:500">📅 캘린더 연동 ✅</div>
+      <button class="btn btn-outline btn-sm" onclick="disableCalSync()" style="font-size:0.72rem;color:#e84040;border-color:#e84040">해제</button>
+    </div>
+    <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px">구독 URL</div>
+    <div class="cal-url-box" onclick="copyCalUrl('${webcalUrl}')" title="클릭하여 복사">${webcalUrl}</div>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button class="btn btn-outline btn-sm" style="flex:1" onclick="copyCalUrl('${webcalUrl}')">📋 webcal:// 복사</button>
+      <button class="btn btn-outline btn-sm" style="flex:1" onclick="copyCalUrl('${httpsUrl}')">🔗 https:// 복사</button>
+    </div>
+    <div style="font-size:0.72rem;color:var(--text-muted);margin-top:8px;line-height:1.5">
+      <b>iPhone 캘린더:</b> 설정 → 캘린더 → 계정 추가 → 기타 → 구독된 캘린더 추가 → webcal:// URL 붙여넣기<br>
+      <b>Google 캘린더:</b> 다른 캘린더 + → URL로 추가 → https:// URL 붙여넣기
+    </div>`;
 }

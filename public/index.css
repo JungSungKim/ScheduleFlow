@@ -2530,3 +2530,22 @@ details[open] .month-group-chevron {
 .month-group-body {
   padding: 4px 0 4px 0;
 }
+
+/* ================================================
+   CALENDAR SYNC (webcal)
+   ================================================ */
+.cal-url-box {
+  font-size: 0.72rem;
+  font-family: monospace;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  word-break: break-all;
+  cursor: pointer;
+  color: var(--color-primary);
+  transition: background var(--transition-fast);
+}
+.cal-url-box:hover {
+  background: var(--color-primary-light);
+}
