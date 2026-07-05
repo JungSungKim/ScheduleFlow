@@ -3,7 +3,7 @@
    버전을 올릴 때 CACHE_VER + PRECACHE 목록도 동기화할 것
    ================================================ */
 
-const CACHE_VER = 'sf-v28';
+const CACHE_VER = 'sf-v29';
 
 // 오프라인 캐시 대상 (버전 쿼리스트링 포함)
 const PRECACHE = [
@@ -15,7 +15,7 @@ const PRECACHE = [
   '/auth.js?v=8',
   '/todo.js?v=13',
   '/calendar.js?v=10',
-  '/trips.js?v=9',
+  '/trips.js?v=10',
   '/documents.js?v=5',
   '/dashboard.js?v=14',
   '/manifest.json',

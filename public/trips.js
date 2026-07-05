@@ -43,10 +43,10 @@ function _renderTripCard(t) {
       <span class="dday-badge ${dd===0?'today':''}">  ${ddText}</span>
     </div>
     <div class="trip-doc-status">
-      <button class="doc-status-btn ${t.preReport ? 'done' : ''}" onclick="event.stopPropagation();openTripDoc('${t.id}','pre')" title="출장사전신청서">
+      <button class="doc-status-btn ${t.preReport ? 'done' : ''}" onclick="event.stopPropagation();toggleTripDoc('${t.id}','pre')" title="클릭하여 작성 여부 토글">
         📝 신청서 ${preIcon}
       </button>
-      <button class="doc-status-btn ${t.postReport ? 'done' : ''}" onclick="event.stopPropagation();openTripDoc('${t.id}','post')" title="외근출장보고서">
+      <button class="doc-status-btn ${t.postReport ? 'done' : ''}" onclick="event.stopPropagation();toggleTripDoc('${t.id}','post')" title="클릭하여 작성 여부 토글">
         📋 보고서 ${postIcon}
       </button>
     </div>
@@ -74,15 +74,14 @@ function _renderByProject(trips) {
   return html || '';
 }
 
-function openTripDoc(tripId, type) {
-  navigate('documents');
-  setTimeout(() => {
-    selectTripForDoc(tripId);
-    setTimeout(() => {
-      if (type === 'pre') showPreReport(tripId);
-      else showPostReport(tripId);
-    }, 50);
-  }, 100);
+function toggleTripDoc(tripId, type) {
+  const trips = Store.getTrips();
+  const t = trips.find(x => x.id === tripId);
+  if (!t) return;
+  const field = type === 'pre' ? 'preReport' : 'postReport';
+  t[field] = t[field] ? null : { checked: true, checkedAt: Date.now() };
+  Store.saveTrips(trips);
+  renderTrips();
 }
 
 function _renderCompletedTripsByMonth(completedTrips) {
@@ -336,12 +335,12 @@ function showTripDetail(id) {
         ${todoListHtml}
       </div>
       <div class="detail-section">
-        <div class="detail-section-title">📄 문서 상태</div>
+        <div class="detail-section-title">📄 문서 작성 여부</div>
         <div style="display:flex;gap:8px;margin-top:8px">
-          <button class="doc-status-btn ${t.preReport ? 'done' : ''}" style="flex:1" onclick="closeModal();openTripDoc('${id}','pre')">
+          <button class="doc-status-btn ${t.preReport ? 'done' : ''}" style="flex:1" onclick="toggleTripDoc('${id}','pre');showTripDetail('${id}')">
             📝 신청서 ${t.preReport ? '✅ 작성됨' : '⬜ 미작성'}
           </button>
-          <button class="doc-status-btn ${t.postReport ? 'done' : ''}" style="flex:1" onclick="closeModal();openTripDoc('${id}','post')">
+          <button class="doc-status-btn ${t.postReport ? 'done' : ''}" style="flex:1" onclick="toggleTripDoc('${id}','post');showTripDetail('${id}')">
             📋 보고서 ${t.postReport ? '✅ 작성됨' : '⬜ 미작성'}
           </button>
         </div>
