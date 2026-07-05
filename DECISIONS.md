@@ -43,6 +43,8 @@
 | F-011 | SW 캐시 전략 | **Cache-first + SW 버전 = 앱 버전** (`sf-v23`) | 오프라인 지원 + 새 배포 시 CACHE_VER + PRECACHE 목록을 sw.js에서 함께 올려야 함 |
 | F-012 | Firebase authDomain | **`web.app` 고정** (`my-scheduleflow-dev.web.app`) | `firebaseapp.com` 사용 시 iOS PWA standalone에서 cross-origin postMessage 차단. `web.app/__/auth/handler`를 GCC OAuth 클라이언트 redirect URI에 등록 필요 (UI 전용, API 불가) |
 | F-013 | 모바일 로그인 전략 | **Standalone → popup / 일반 모바일 → redirect** | iOS Standalone에서 redirect는 PWA 컨텍스트 영구 이탈. `_isMobile` + `_isStandalone` 플래그로 분기 (auth.js) |
+| F-014 | 문서 탭 노출 | **사이드바에서 숨김, 코드 유지** (`display:none`) | 문서 기능 자체는 출장 카드의 `openTripDoc()` 경유로만 접근. 독립 탭으로는 활용도 낮음 |
+| F-015 | webcal 캘린더 연동 | **Cloudflare Worker + Firestore `publicCalendars` 컬렉션** | Firebase Functions는 Blaze 플랜(신용카드) 필요. Cloudflare Worker 무료 티어(100K req/일)로 대체. ICS는 앱에서 생성 후 Firestore에 저장, Worker가 서빙 |
 
 ---
 
@@ -50,5 +52,5 @@
 
 | ID | 항목 | 현재 방향 | 결정 필요 시점 |
 |----|------|-----------|--------------|
-| P-001 | PDF 내보내기 방식 | `window.print()` vs `jsPDF` vs 서버사이드 | Phase 2 문서 기능 시작 전 |
+| ~~P-001~~ | ~~PDF 내보내기 방식~~ | ✅ `window.print()` 방식으로 Phase 2 완료 (미결 해제) | |
 | ~~P-002~~ | ~~PWA 지원~~ | ✅ 완료 (2026-06-02) | |

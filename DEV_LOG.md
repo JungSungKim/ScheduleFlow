@@ -4,10 +4,47 @@
 
 | 항목 | 내용 |
 |------|------|
-| 최종 갱신 | 2026-06-30 |
+| 최종 갱신 | 2026-07-05 |
 | 브랜치 | master |
-| 최신 커밋 | 18801f1 |
+| 최신 커밋 | 7c31ee8 |
 | 미커밋 변경 | 없음 |
+
+---
+
+## 2026-07-05
+
+### 완료 작업
+
+**문서 탭 비활성화 + 출장 카드 문서 상태 표시**
+- 사이드바 문서 탭 `display:none` (코드·페이지 섹션 유지, `openTripDoc()` 경유 접근)
+- 대시보드 "미완료 문서" 카드 숨김
+- 출장 카드에 📝신청서 / 📋보고서 상태 버튼 추가 (✅/⬜ + 클릭 시 직접 편집)
+- 출장 상세 모달에 문서 상태 섹션 추가
+- 대시보드 미완료 문서 항목 클릭 → `openTripDoc()` 직접 이동
+- 출장 목록 sort: "사업명 유무" 옵션 추가 → 🏷️사업 출장 / 📋일반 출장 그룹 분리
+
+**webcal 캘린더 연동 (Cloudflare Worker)**
+- `generateICS()` — 출장(기간 이벤트) + 마감일 있는 미완료 TODO → ICS 생성
+- `scheduleCalSync()` — saveTodos/saveTrips 후 3초 debounce → Firestore `publicCalendars/{token}`
+- 설정 패널에 캘린더 연동 섹션: Worker URL 입력 → 연동 시작 → webcal:// URL 복사
+- `cloudflare-worker/worker.js` — Firestore에서 ICS 읽어 `text/calendar` 응답
+- `firestore.rules` 신설 — `publicCalendars` 공개 읽기 허용
+- `firebase.json` — firestore rules 참조 추가
+- iPhone 캘린더 연동 확인 완료
+
+**버그 수정**
+- `auth.js` 수정 후 버전 번호(`?v=7→v8`) 누락 → 브라우저 캐시가 구버전 서빙 → 설정 패널 캘린더 섹션 미표시
+
+### 의사결정
+
+- 문서 탭은 숨기되 코드 유지 — `openTripDoc()` 경유로 기능 접근 가능하게
+- webcal 구현 방식: Cloudflare Worker (무료, 신용카드 불필요) + Firestore 공개 컬렉션
+- ICS 동기화 트리거: 출장/할 일 저장 시 3초 debounce (Firestore 쓰기와 동일 패턴)
+
+### 다음 할 일
+
+- [ ] 일정 충돌 감지 및 알림 (Phase 4) — 출장 기간 겹침 / TODO 마감 충돌 감지
+- [ ] 문서 템플릿 UX 개선 — 저장 여부 표시 등 (Phase 3 잔여)
 
 ---
 
