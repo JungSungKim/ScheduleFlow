@@ -43,8 +43,9 @@
 | F-011 | SW 캐시 전략 | **Cache-first + SW 버전 = 앱 버전** (`sf-v23`) | 오프라인 지원 + 새 배포 시 CACHE_VER + PRECACHE 목록을 sw.js에서 함께 올려야 함 |
 | F-012 | Firebase authDomain | **`web.app` 고정** (`my-scheduleflow-dev.web.app`) | `firebaseapp.com` 사용 시 iOS PWA standalone에서 cross-origin postMessage 차단. `web.app/__/auth/handler`를 GCC OAuth 클라이언트 redirect URI에 등록 필요 (UI 전용, API 불가) |
 | F-013 | 모바일 로그인 전략 | **Standalone → popup / 일반 모바일 → redirect** | iOS Standalone에서 redirect는 PWA 컨텍스트 영구 이탈. `_isMobile` + `_isStandalone` 플래그로 분기 (auth.js) |
-| F-014 | 문서 탭 노출 | **사이드바에서 숨김, 코드 유지** (`display:none`) | 문서 기능 자체는 출장 카드의 `openTripDoc()` 경유로만 접근. 독립 탭으로는 활용도 낮음 |
+| F-014 | 문서 탭 노출 | **사이드바에서 숨김, 코드 유지** (`display:none`) | 독립 탭으로 활용도 낮음. 문서 작성은 외부 플랫폼에서 하고 ScheduleFlow에서는 작성 여부만 체크 |
 | F-015 | webcal 캘린더 연동 | **Cloudflare Worker + Firestore `publicCalendars` 컬렉션** | Firebase Functions는 Blaze 플랜(신용카드) 필요. Cloudflare Worker 무료 티어(100K req/일)로 대체. ICS는 앱에서 생성 후 Firestore에 저장, Worker가 서빙 |
+| F-016 | 신청서/보고서 버튼 동작 | **토글 체크 (작성 여부 기록)** | 문서 편집 화면 이동이 아닌 단순 ✅/⬜ 토글. 실제 문서 작성은 외부 플랫폼에서 수행 |
 
 ---
 
