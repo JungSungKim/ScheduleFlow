@@ -379,9 +379,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-page]').forEach(btn => {
     btn.addEventListener('click', () => navigate(btn.dataset.page));
   });
-  document.getElementById('modal-overlay').addEventListener('click', e => {
-    if (e.target.id === 'modal-overlay') closeModal();
-  });
   document.getElementById('btn-add-new').addEventListener('click', showAddNewModal);
 
   const btnGoHome = document.getElementById('btn-go-home');
@@ -390,7 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Ctrl+K / Cmd+K → 검색
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
-    if (e.key === 'Escape') { closeSearch(); closeModal(); }
+    if (e.key === 'Escape') { closeSearch(); }
   });
 
   initTodoFilters();

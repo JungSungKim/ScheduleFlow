@@ -230,12 +230,12 @@ Store.getCalWorkerUrl() / Store.saveCalWorkerUrl(str)  // localStorage: sf_cal_w
   → REST API로는 OAuth 클라이언트 수정 불가 (UI 전용 작업)
 
 ### 서비스 워커 캐시 버전 동기화 (sw.js)
-- `public/` 파일 변경 시 반드시 **세 곳** 동시 업데이트:
-  1. `index.html` — 해당 파일의 `?v=N` 쿼리스트링 증가
-  2. `sw.js` — `CACHE_VER` 문자열 증가 + `PRECACHE` 배열의 버전 번호 동기화
-- `CACHE_VER`이 바뀌면 activate 시 이전 캐시 자동 삭제됨
-- **주의**: 파일을 수정하고 `index.html`의 버전만 올리거나 `sw.js`만 올리면 캐시 불일치 발생
-  → 실제 사례: `auth.js` 수정 후 버전 누락 → 브라우저가 구버전 캐시 서빙 → 신규 기능 미표시
+- `public/` 파일 변경 시 **세 단계 체크**:
+  1. `index.html` — 해당 파일 `?v=N` 증가
+  2. `sw.js` PRECACHE 배열 — 같은 파일 버전 번호 동기화
+  3. `sw.js` `CACHE_VER` 문자열 증가 (activate 시 이전 캐시 삭제 트리거)
+- 현재 버전 확인: `grep -n "CACHE_VER\|\.js?v=" public/sw.js public/index.html`
+- **주의**: 단계 누락 시 캐시 불일치 — 실제 사례: `auth.js` 수정 후 버전 누락 → 구버전 캐시 서빙 → 신규 기능 미표시
 
 ### Firebase CLI 토큰
 - 경로: `C:/Users/{user}/.config/configstore/firebase-tools.json` → `tokens.access_token`
@@ -249,6 +249,15 @@ Store.getCalWorkerUrl() / Store.saveCalWorkerUrl(str)  // localStorage: sf_cal_w
 - 사이드바 문서 탭은 `display:none` (숨김). `navigate('documents')`는 여전히 동작함
 - **반드시 `openTripDoc(tripId, 'pre'|'post')`를 통해 접근** — `navigate('documents')` 직접 호출 금지
 - 출장 카드 버튼, 출장 상세 모달, 대시보드 미완료 문서 항목 모두 `openTripDoc` 경유
+
+### 모달 닫기 정책 (app.js)
+- `modal-overlay` 바깥 클릭으로 닫기 **비활성화** — 입력 중 데이터 유실 방지
+- ESC 키로 모달 닫기 **비활성화** (ESC는 검색창만 닫음)
+- 모달은 반드시 ✕ 버튼 또는 취소 버튼으로만 닫혀야 함 — 되돌리지 말 것
+
+### public/ 임시 파일
+- 편집기가 `index.html.tmp.*` 등 임시 파일을 `public/`에 생성할 수 있음
+- Firebase Hosting 배포 시 함께 업로드되므로 발견 즉시 삭제할 것
 
 ### webcal 캘린더 동기화 패턴
 - `Store.saveTodos/saveTrips` 호출 시 `scheduleCalSync()` 자동 트리거 (3초 debounce)
