@@ -25,3 +25,6 @@ Thumbs.db
 *.tmp.*
 *.tmp
 .code-review-graph/
+
+# Claude Code — 개인 설정만 제외 (커맨드는 공유)
+.claude/settings.local.json
