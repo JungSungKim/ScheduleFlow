@@ -6,7 +6,7 @@
 |------|------|
 | 최종 갱신 | 2026-07-07 |
 | 브랜치 | master |
-| 최신 커밋 | 9a7b38c |
+| 최신 커밋 | 0d1edf2 |
 | 미커밋 변경 | 없음 |
 
 ---
@@ -27,9 +27,16 @@
 - `public/` 임시 파일 gotcha 추가
 - 현재 버전 확인 명령어 추가
 
+**프로젝트 커맨드 저장소 추가**
+- `.claude/commands/scheduleflow-start.md` / `scheduleflow-exit.md` 프로젝트에 체크인
+- 기존 글로벌 커맨드(`~/.claude/commands/`)의 절대경로(`/c/dev/ScheduleFlow`)를 상대경로로 수정
+- `.gitignore`에 `.claude/settings.local.json` 추가 (개인 설정 제외, 커맨드는 공유)
+- 다른 컴퓨터에서 `git pull` 후 바로 `/scheduleflow-start`, `/scheduleflow-exit` 사용 가능
+
 ### 의사결정
 
 - 모달 닫기: 확인 다이얼로그 없이 완전 비활성화 — 단순·명확, 취소 버튼으로 명시적 닫기
+- 커맨드 공유: `.claude/commands/`를 저장소에 체크인, `settings.local.json`만 gitignore
 
 ### 다음 할 일
 
