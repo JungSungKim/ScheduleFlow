@@ -59,17 +59,17 @@ function _renderTripCard(t) {
   </div>`;
 }
 
-function _renderByProject(trips) {
+function _renderByProject(trips, opts = {}) {
   const withProject = trips.filter(t => t.project && t.project.trim());
   const noProject   = trips.filter(t => !t.project || !t.project.trim());
   let html = '';
   if (withProject.length) {
     html += `<div class="project-group-header"><span>🏷️ 사업 출장</span><span class="month-group-count">${withProject.length}건</span></div>`;
-    html += withProject.map(_renderTripCard).join('');
+    html += _renderTripsByMonth(withProject, opts);
   }
   if (noProject.length) {
     html += `<div class="project-group-header"><span>📋 일반 출장</span><span class="month-group-count">${noProject.length}건</span></div>`;
-    html += noProject.map(_renderTripCard).join('');
+    html += _renderTripsByMonth(noProject, opts);
   }
   return html || '';
 }
@@ -84,21 +84,24 @@ function toggleTripDoc(tripId, type) {
   renderTrips();
 }
 
-function _renderCompletedTripsByMonth(completedTrips) {
+function _renderTripsByMonth(trips, { order = 'desc', labelSuffix = '' } = {}) {
   const prevYM = (() => {
     const d = new Date(); d.setMonth(d.getMonth() - 1);
     return d.toISOString().slice(0, 7);
   })();
 
   const groups = {};
-  completedTrips.forEach(t => {
-    const key = (t.endDate || t.startDate || t.createdAt || '').slice(0, 7) || 'nodate';
+  trips.forEach(t => {
+    const base = t.status === 'completed'
+      ? (t.endDate || t.startDate)
+      : (t.startDate || t.endDate);
+    const key = (base || t.createdAt || '').slice(0, 7) || 'nodate';
     if (!groups[key]) groups[key] = [];
     groups[key].push(t);
   });
 
   return Object.keys(groups)
-    .sort((a, b) => b.localeCompare(a))
+    .sort((a, b) => order === 'asc' ? a.localeCompare(b) : b.localeCompare(a))
     .map(key => {
       const items = groups[key];
       const label = key === 'nodate' ? '날짜 없음' : fmtYearMonth(key);
@@ -107,12 +110,16 @@ function _renderCompletedTripsByMonth(completedTrips) {
       <details class="month-group" ${isOpen ? 'open' : ''}>
         <summary class="month-group-header">
           <span class="month-group-chevron">▶</span>
-          <span class="month-group-title">${label} 완료</span>
+          <span class="month-group-title">${label}${labelSuffix}</span>
           <span class="month-group-count">${items.length}건</span>
         </summary>
         <div class="month-group-body">${items.map(_renderTripCard).join('')}</div>
       </details>`;
     }).join('');
+}
+
+function _renderCompletedTripsByMonth(completedTrips) {
+  return _renderTripsByMonth(completedTrips, { order: 'desc', labelSuffix: ' 완료' });
 }
 
 function renderTrips() {
@@ -123,7 +130,9 @@ function renderTrips() {
   if (tripFilter === 'completed') {
     const completed = trips.filter(t => t.status === 'completed');
     list.innerHTML = completed.length
-      ? (byProject ? _renderByProject(completed) : _renderCompletedTripsByMonth(completed))
+      ? (byProject
+          ? _renderByProject(completed, { order: 'desc', labelSuffix: ' 완료' })
+          : _renderCompletedTripsByMonth(completed))
       : '<p class="empty-state">완료된 출장이 없습니다 ✈️</p>';
     return;
   }
@@ -131,7 +140,9 @@ function renderTrips() {
   if (tripFilter !== 'all') {
     const filtered = trips.filter(t => t.status === tripFilter);
     list.innerHTML = filtered.length
-      ? (byProject ? _renderByProject(filtered) : filtered.map(_renderTripCard).join(''))
+      ? (byProject
+          ? _renderByProject(filtered, { order: 'asc' })
+          : filtered.map(_renderTripCard).join(''))
       : '<p class="empty-state">등록된 출장이 없습니다 ✈️</p>';
     return;
   }
@@ -140,11 +151,15 @@ function renderTrips() {
   const active    = trips.filter(t => t.status !== 'completed');
   const completed = trips.filter(t => t.status === 'completed');
 
-  let html = byProject ? _renderByProject(active) : active.map(_renderTripCard).join('');
+  let html = byProject
+    ? _renderByProject(active, { order: 'asc' })
+    : active.map(_renderTripCard).join('');
 
   if (completed.length) {
     if (html) html += '<div class="done-section-divider"><span>완료된 출장</span></div>';
-    html += byProject ? _renderByProject(completed) : _renderCompletedTripsByMonth(completed);
+    html += byProject
+      ? _renderByProject(completed, { order: 'desc', labelSuffix: ' 완료' })
+      : _renderCompletedTripsByMonth(completed);
   }
 
   list.innerHTML = html || '<p class="empty-state">등록된 출장이 없습니다 ✈️</p>';
