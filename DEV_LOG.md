@@ -4,10 +4,42 @@
 
 | 항목 | 내용 |
 |------|------|
-| 최종 갱신 | 2026-07-07 |
+| 최종 갱신 | 2026-07-20 |
 | 브랜치 | master |
-| 최신 커밋 | 0d1edf2 |
+| 최신 커밋 | 58ddf51 |
 | 미커밋 변경 | 없음 |
+
+---
+
+## 2026-07-20
+
+### 완료 작업
+
+**출장 사업명 정렬 시 월별 그룹핑 추가**
+- `trips.js` `_renderTripsByMonth(trips, {order, labelSuffix})` 헬퍼 신설
+  - 대표 날짜: 완료면 `endDate`, 아니면 `startDate` (없으면 `createdAt` 폴백)
+  - `order` 옵션으로 정렬 방향 (`asc`: 다가오는 순, `desc`: 최신 완료 순)
+- `_renderByProject` 리팩토링 — 🏷️사업/📋일반 그룹 내부에서 `_renderTripsByMonth` 호출
+- `_renderCompletedTripsByMonth`는 헬퍼 얇은 래퍼로 축소 (중복 제거)
+- `renderTrips` 필터별 정렬 방향 명시 전달
+  - `all` 필터: active는 오름차순, completed는 내림차순
+  - `completed` 필터: 내림차순 + " 완료" 접미사
+  - `planned`/`in-progress` 필터: 오름차순
+- `trips.js v10→v11`, `sw.js CACHE_VER sf-v30→sf-v31`, Firebase Hosting 배포 완료
+
+**임시 파일 정리**
+- `public/index.html.tmp.17136.1783221211477` 삭제
+
+### 의사결정
+
+- 월별 그룹 대표 날짜는 상태별로 다르게: 완료된 출장은 `endDate`(언제 끝났나), 미완료는 `startDate`(언제 시작하나)
+- 미완료 그룹은 오름차순 → 다가오는 것이 위로. 완료 그룹은 내림차순 → 최신 완료가 위로
+- `_renderCompletedTripsByMonth` 남긴 이유: 호출부 명료성 (사업명 정렬 아닌 경우 완료만 월별 그룹핑) — 내부는 새 헬퍼 재사용
+
+### 다음 할 일
+
+- [ ] 일정 충돌 감지 및 알림 (Phase 4) — 출장 기간 겹침 / TODO 마감 충돌 감지
+- [ ] 문서 템플릿 UX 개선 (Phase 3 잔여)
 
 ---
 
